@@ -44,7 +44,7 @@ function providerInput(input: GenerationModuleRequest) {
   });
 }
 
-function providerError(error: unknown): OpenAIProviderError {
+export function normaliseProviderError(error: unknown): OpenAIProviderError {
   const candidate = error as { name?: string; status?: number };
   if (candidate?.name === "AbortError" || candidate?.name === "APIConnectionTimeoutError") {
     return new OpenAIProviderError("PROVIDER_TIMEOUT");
@@ -99,6 +99,6 @@ export async function generateModuleWithOpenAI(
     }
   } catch (error) {
     if (error instanceof OpenAIProviderError) throw error;
-    throw providerError(error);
+    throw normaliseProviderError(error);
   }
 }

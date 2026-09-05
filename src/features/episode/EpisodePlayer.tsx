@@ -10,6 +10,7 @@ import "./episode.css";
 
 export interface EpisodePlayerProps {
   bundle: CompiledLawfloBundle;
+  narrationUrl?: string;
   onEvent: MatterShiftEventReporter;
   onComplete: () => void;
 }
@@ -18,12 +19,13 @@ function scopeOf(bundle: CompiledLawfloBundle): JourneyScope {
   return { bundleId: bundle.manifest.bundleId, sourceVersion: bundle.manifest.sourceVersion, contractVersion: bundle.rehearsal.scenario.contractVersion, approvalFingerprint: bundle.manifest.approvalFingerprint };
 }
 
-export function EpisodePlayer({ bundle, onEvent, onComplete }: EpisodePlayerProps) {
+export function EpisodePlayer({ bundle, narrationUrl, onEvent, onComplete }: EpisodePlayerProps) {
   const timeline = useMemo(() => createEpisodeTimeline(bundle), [bundle]);
   const scope = useMemo(() => scopeOf(bundle), [bundle]);
   const [state, dispatch] = useReducer((current: ReturnType<typeof createInitialEpisodeState>, action: Parameters<typeof episodeReducer>[1]) => episodeReducer(current, action, timeline), scope, (currentScope) => loadEpisode(currentScope) ?? createInitialEpisodeState());
   const [captions, setCaptions] = useState(true);
   const [drawer, setDrawer] = useState<"none" | "transcript" | "sources">("none");
+  const [audioUnavailable, setAudioUnavailable] = useState(false);
   const [query, setQuery] = useState("");
   const started = useRef(false);
   const completed = useRef(false);
@@ -38,6 +40,7 @@ export function EpisodePlayer({ bundle, onEvent, onComplete }: EpisodePlayerProp
   useEffect(() => {
     if (state.status === "complete" && !completed.current) { completed.current = true; onComplete(); }
   }, [onComplete, state.status]);
+  useEffect(() => { setAudioUnavailable(false); }, [narrationUrl]);
 
   const play = () => {
     if (!started.current) {
@@ -52,7 +55,7 @@ export function EpisodePlayer({ bundle, onEvent, onComplete }: EpisodePlayerProp
 
   return <section className="episode" aria-label="LAWFLO learning episode">
     <header className="episode__header">
-      <div><span className="episode__kicker">LAWFLO INTERACTIVE STORY · S1:E1</span><h1>{bundle.episode.title}</h1><p>With {bundle.useCase.contributorName}, {bundle.useCase.contributorRole}</p><small className="episode__provenance">Interactive story · deterministic fallback · source-linked and human-approved</small></div>
+      <div><span className="episode__kicker">LAWFLO INTERACTIVE STORY · S1:E1</span><h1>{bundle.episode.title}</h1><p>With {bundle.useCase.contributorName}, {bundle.useCase.contributorRole}</p><small className="episode__provenance">Interactive story · deterministic fallback · source-linked and human-approved</small>{narrationUrl && !audioUnavailable ? <div className="episode__narration"><span>AI-generated voice · approved narration</span><audio title="Approved AI narration" controls src={narrationUrl} onError={() => setAudioUnavailable(true)} /></div> : null}{audioUnavailable ? <p className="episode__audio-status" role="status">Narration unavailable. Captions remain active.</p> : null}</div>
       <div className="episode__tools">
         <button type="button" onClick={() => setCaptions((value) => !value)} aria-pressed={captions}>CC {captions ? "On" : "Off"}</button>
         <button type="button" onClick={() => setDrawer("transcript")}>Transcript</button>

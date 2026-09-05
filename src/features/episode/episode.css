@@ -5,6 +5,9 @@
 .episode__header h1 { font-family: Georgia, serif; font-size: clamp(2rem, 4vw, 4rem); line-height: .95; max-width: 760px; margin: .4rem 0; font-weight: 500; }
 .episode__header p, .episode__kicker { color: #a9bdb3; }
 .episode__kicker { font-size: .72rem; letter-spacing: .18em; }
+.episode__narration { display: flex; align-items: center; gap: .75rem; margin-top: .8rem; color: #a9bdb3; font-size: .75rem; }
+.episode__narration audio { height: 2rem; max-width: 260px; }
+.episode__audio-status { margin: .8rem 0 0; color: #ffc1a8; font-size: .82rem; }
 .episode__tools { display: flex; gap: .5rem; }
 .episode__tools button, .episode__controls button { border: 1px solid #536b61; border-radius: 999px; background: transparent; color: inherit; padding: .7rem 1rem; }
 .episode__stage { position: relative; max-width: 1200px; min-height: 480px; margin: 0 auto; overflow: hidden; border: 1px solid #2f443b; border-radius: 28px; background: radial-gradient(circle at 70% 25%, #415e4d 0, #1b3229 26%, #0b1915 68%); display: grid; grid-template-columns: .9fr 1.1fr; align-items: stretch; box-shadow: 0 30px 90px #0009; }

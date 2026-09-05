@@ -12,6 +12,17 @@ const bundle = compileApprovedTrainingModule(
 );
 
 describe("EpisodePlayer", () => {
+  it("plays approved AI narration and falls back to captions when audio fails", () => {
+    const view = render(<EpisodePlayer bundle={bundle} narrationUrl="blob:approved-narration" onEvent={vi.fn()} onComplete={vi.fn()} />);
+    expect(screen.getByText(/ai-generated voice/i)).toBeVisible();
+    const audio = screen.getByTitle(/approved ai narration/i);
+    expect(audio).toHaveAttribute("src", "blob:approved-narration");
+    fireEvent.error(audio);
+    expect(screen.getByRole("status")).toHaveTextContent(/captions remain active/i);
+    expect(screen.queryByTitle(/approved ai narration/i)).not.toBeInTheDocument();
+    view.unmount();
+  });
+
   it("describes the fallback truthfully as an interactive story rather than generated video", () => {
     render(<EpisodePlayer bundle={bundle} onEvent={vi.fn()} onComplete={vi.fn()} />);
     expect(screen.getByText(/interactive story · deterministic fallback/i)).toBeVisible();

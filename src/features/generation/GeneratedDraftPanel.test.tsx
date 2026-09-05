@@ -59,4 +59,26 @@ describe("GeneratedDraftPanel", () => {
     render(<GeneratedDraftPanel pack={loadSyntheticDemoPack()} onGenerated={vi.fn()} generate={generate} />);
     expect(screen.getByLabelText(/studio production token/i)).toHaveValue("");
   });
+
+  it("offers narration only after exact human approval and discloses the AI voice", async () => {
+    const narration = {
+      url: "blob:narration",
+      busy: false,
+      error: undefined,
+      generate: vi.fn(async () => undefined),
+      clear: vi.fn(),
+    };
+    const view = render(<GeneratedDraftPanel pack={loadSyntheticDemoPack()} draft={draft} onGenerated={vi.fn()} generate={vi.fn()} narration={narration} />);
+    expect(screen.queryByRole("button", { name: /generate approved narration/i })).not.toBeInTheDocument();
+    view.rerender(<GeneratedDraftPanel pack={loadSyntheticDemoPack()} draft={draft} approvalFingerprint="msc-abcd1234" onGenerated={vi.fn()} generate={vi.fn()} narration={narration} />);
+    fireEvent.change(screen.getByLabelText(/studio production token/i), { target: { value: "token" } });
+    fireEvent.click(screen.getByRole("button", { name: /generate approved narration/i }));
+    expect(narration.generate).toHaveBeenCalledWith(expect.objectContaining({
+      narration: "intake narration\n\nreview narration\n\nroute narration",
+      approvalFingerprint: "msc-abcd1234",
+      studioToken: "token",
+    }));
+    expect(screen.getByText(/ai-generated voice/i)).toBeVisible();
+    expect(screen.getByTitle(/approved ai narration/i)).toHaveAttribute("src", "blob:narration");
+  });
 });
