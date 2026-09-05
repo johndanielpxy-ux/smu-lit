@@ -1,6 +1,6 @@
 # LAWFLO product-mechanics audit
 
-Research date: 5 September 2026  
+Research date: 5 September 2026
 Scope: every external product explicitly described as a borrowed mechanic, a
 reference product, or a strategic constraint in the LAWFLO planning documents.
 
