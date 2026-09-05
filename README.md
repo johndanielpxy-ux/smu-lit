@@ -20,15 +20,32 @@ npm test
 npm run build
 ```
 
+## Join the team
+
+Antigravity contributors should start with [CONTRIBUTING.md](CONTRIBUTING.md),
+then read [AGENTS.md](AGENTS.md), the [technical depth plan](docs/TECHNICAL-DEPTH.md),
+and their one assigned handoff in [`docs/agent-handoffs/`](docs/agent-handoffs/).
+Run Antigravity from the repository root so it can discover the workspace
+instructions.
+
+If gstack is installed, expose the relevant skills to Antigravity with:
+
+```bash
+bash scripts/link-gstack-antigravity.sh
+```
+
+The handoff documents and the `npm test` / `npm run build` gates remain the
+fallback if a skill is unavailable.
+
 ## Shared contract
 
-The contract checkpoint is commit `e3f115e` on `feat/core-integration`.
+The contract checkpoint is commit `e3f115e`, now included on `main`.
 
 All feature branches import:
 
 - `UseCase`, `MatterShiftEvent` and related types from `src/domain/mattershift.ts`.
 - The canonical synthetic workflow from `src/demo/demoUseCase.ts`.
-- Event helpers from `src/features/events/eventStore.ts` after the second core commit lands.
+- Event helpers from `src/features/events/eventStore.ts`.
 
 Do not rename shared types or create private alternative demo data. Coordinate contract changes with John.
 
@@ -36,16 +53,18 @@ Do not rename shared types or create private alternative demo data. Coordinate c
 
 | Owner | Branch | Owned feature path |
 |---|---|---|
-| John | `feat/core-integration` | domain, demo fixture, compiler, events and application shell |
+| John | `feat/system-integration` | domain, compiler, event analytics and application shell |
 | Su-Ann | `feat/cinematic-episode` | `src/features/episode/` and episode assets |
 | Ananya | `feat/legal-engineer-studio` | `src/features/legal-engineer-studio/` and synthetic content |
 | Krishiv | `feat/learner-flow` | `src/features/learner-flow/` |
 
-Because the repository began empty, teammates should base their feature branches on the contract branch:
+Teammates should base their feature branches on `main`:
 
 ```bash
 git fetch origin
-git switch -c feat/your-branch origin/feat/core-integration
+git switch main
+git pull --ff-only
+git switch -c feat/your-branch
 ```
 
 Replace `feat/your-branch` with the assigned branch above.

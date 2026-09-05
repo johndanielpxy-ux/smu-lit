@@ -8,3 +8,8 @@ coverage
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
+
+# Antigravity discovers project skills here. Each contributor links their
+# own gstack installation, so machine-specific symlinks stay untracked.
+.agents/skills/*
+!.agents/skills/.gitkeep
