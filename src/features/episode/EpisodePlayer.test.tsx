@@ -1,17 +1,45 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { approveUseCase } from "../../domain/approval";
 import { contractTrainingContent } from "../../demo/contractScenarios";
 import { demoUseCase } from "../../demo/demoUseCase";
 import { compileApprovedTrainingModule } from "../compiler/bundleCompiler";
 import { EpisodePlayer } from "./EpisodePlayer";
+import { preparedEpisodeMedia } from "./episodeMedia";
 
 const bundle = compileApprovedTrainingModule(
   approveUseCase(demoUseCase, "Jordan Lee", "2026-09-05T04:00:00.000Z"),
   contractTrainingContent,
 );
 
+afterEach(() => localStorage.clear());
+
 describe("EpisodePlayer", () => {
+  it("plays durable video segments, pauses for the checkpoint, then offers the guided rehearsal", () => {
+    const onComplete = vi.fn();
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
+    render(<EpisodePlayer bundle={bundle} media={preparedEpisodeMedia} onEvent={vi.fn()} onComplete={onComplete} />);
+
+    const video = screen.getByTitle(/prepared training episode/i);
+    expect(video).toHaveAttribute("src", preparedEpisodeMedia.segments[0].src);
+    fireEvent.click(screen.getByRole("button", { name: /play episode/i }));
+    expect(play).toHaveBeenCalled();
+
+    fireEvent.ended(video);
+    expect(screen.getByRole("heading", { name: /what should happen next/i })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /send to business approval/i }));
+    expect(screen.getByText(/low value never cancels/i)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /escalate to legal review/i }));
+    expect(screen.getByTitle(/prepared training episode/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[1].src);
+
+    fireEvent.ended(screen.getByTitle(/prepared training episode/i));
+    expect(screen.getByRole("button", { name: /start guided rehearsal/i })).toBeVisible();
+    expect(onComplete).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /start guided rehearsal/i }));
+    expect(onComplete).toHaveBeenCalledOnce();
+  });
+
   it("plays approved AI narration and falls back to captions when audio fails", () => {
     const view = render(<EpisodePlayer bundle={bundle} narrationUrl="blob:approved-narration" onEvent={vi.fn()} onComplete={vi.fn()} />);
     expect(screen.getByText(/ai-generated voice/i)).toBeVisible();

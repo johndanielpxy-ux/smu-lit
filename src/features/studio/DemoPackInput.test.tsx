@@ -5,15 +5,16 @@ import { DemoPackInput } from "./DemoPackInput";
 describe("DemoPackInput", () => {
   it("loads the complete deterministic pack without a file dialog", async () => {
     const onReady = vi.fn();
+    const onCreate = vi.fn();
     const onEvent = vi.fn();
-    render(<DemoPackInput onReady={onReady} onEvent={onEvent} />);
+    render(<DemoPackInput onReady={onReady} onCreate={onCreate} onEvent={onEvent} />);
 
-    expect(screen.getAllByLabelText(/select/i)).toHaveLength(5);
+    expect(screen.getByLabelText(/upload workflow resources/i)).toBeVisible();
     fireEvent.click(
-      screen.getByRole("button", { name: /load synthetic demo pack/i }),
+      screen.getByRole("button", { name: /use prepared source pack/i }),
     );
 
-    expect(await screen.findByText(/five inputs ready/i)).toBeVisible();
+    expect(await screen.findByText(/5 sources ready/i)).toBeVisible();
     expect(onReady).toHaveBeenCalledWith(
       expect.objectContaining({
         contractText: expect.stringContaining("submitted-sales-renewal-v1"),
@@ -23,22 +24,24 @@ describe("DemoPackInput", () => {
       source: "bundled",
       inputCount: 5,
     });
+    fireEvent.click(screen.getByRole("button", { name: /create episode/i }));
+    expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ contractText: expect.any(String) }));
   });
 
   it("explains which inputs leave the browser for protected generation", async () => {
-    render(<DemoPackInput onReady={vi.fn()} onEvent={vi.fn()} />);
+    render(<DemoPackInput onReady={vi.fn()} onCreate={vi.fn()} onEvent={vi.fn()} />);
 
-    expect(
-      screen.getByText(/four text sources are sent to the protected generation service/i),
-    ).toBeVisible();
+    expect(screen.getByText(/approved text sources are sent to the protected generation service/i)).not.toBeVisible();
+    fireEvent.click(screen.getByText(/source settings/i));
+    expect(screen.getByText(/approved text sources are sent to the protected generation service/i)).toBeVisible();
     expect(screen.getByText(/the portrait stays in this browser/i)).toBeVisible();
 
     fireEvent.click(
-      screen.getByRole("button", { name: /load synthetic demo pack/i }),
+      screen.getByRole("button", { name: /use prepared source pack/i }),
     );
 
-    expect(await screen.findAllByText(/ready · sent only for generation/i)).toHaveLength(4);
-    expect(screen.getByText(/ready · local only/i)).toBeVisible();
+    expect(await screen.findByText(/contract-review-workflow.md/i)).toBeVisible();
+    expect(screen.getByText(/maya-tan.png/i)).toBeVisible();
   });
 
   it("revokes only replaced user-owned portrait URLs", async () => {
@@ -55,8 +58,8 @@ describe("DemoPackInput", () => {
       .mockReturnValueOnce("blob:portrait-one")
       .mockReturnValueOnce("blob:portrait-two");
     const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
-    render(<DemoPackInput onReady={vi.fn()} onEvent={vi.fn()} />);
-    const portraitInput = screen.getByLabelText(/select contributor portrait/i);
+    render(<DemoPackInput onReady={vi.fn()} onCreate={vi.fn()} onEvent={vi.fn()} />);
+    const portraitInput = screen.getByLabelText(/upload contributor portrait/i);
 
     fireEvent.change(portraitInput, {
       target: { files: [new File(["one"], "one.png", { type: "image/png" })] },

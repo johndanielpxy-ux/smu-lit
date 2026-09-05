@@ -14,13 +14,21 @@
 .episode__stage { position: relative; max-width: 1200px; min-height: 480px; margin: 0 auto; overflow: hidden; border: 1px solid #61718d; border-radius: var(--radius-md); background: linear-gradient(115deg, #10284d, #0b1e3d 68%); display: grid; grid-template-columns: .9fr 1.1fr; align-items: stretch; }
 .episode__stage--comparison { background: linear-gradient(115deg, #16305c 0 49.7%, #512816 50%); }
 .episode__stage--routing { background: radial-gradient(circle at center, #78401c, #0b1e3d 65%); }
+.episode__stage--video { display: block; background: #050b16; }
+.episode__video { display: block; width: 100%; height: 100%; min-height: 480px; object-fit: cover; }
+.episode__video-label { position: absolute; z-index: 2; top: 1.25rem; left: 1.25rem; display: grid; gap: .2rem; padding: .7rem .85rem; border: 1px solid #ffffff32; border-radius: var(--radius-sm); background: #071226c9; backdrop-filter: blur(12px); }
+.episode__video-label span { color: #ec9c68; font: var(--text-label); letter-spacing: .07em; }
+.episode__video-label strong { font-size: .86rem; }
 .episode__portrait { width: 100%; height: 100%; max-height: 540px; object-fit: cover; object-position: center 20%; filter: saturate(.8) contrast(1.06); }
 .episode__frame { padding: clamp(2rem, 5vw, 5rem); align-self: center; }
 .episode__frame span, .episode__eyebrow { color: #ec9c68; letter-spacing: .07em; font: var(--text-label); }
 .episode__frame h2, .episode__checkpoint h2 { font: 700 clamp(2rem, 4vw, 4rem)/1 var(--font-sans); letter-spacing: -.035em; margin: .8rem 0 1.2rem; }
 .episode__frame p { max-width: 52ch; color: #d2dbea; font-size: 1.04rem; line-height: 1.65; }
 .episode__captions { position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); width: max-content; max-width: 80%; padding: .6rem .9rem; border-radius: 8px; background: #020504e8; color: white; text-align: center; }
-.episode__checkpoint { grid-column: 1 / -1; align-self: center; justify-self: center; text-align: center; max-width: 760px; padding: 4rem 2rem; }
+.episode__checkpoint, .episode__transition { position: relative; z-index: 3; grid-column: 1 / -1; align-self: center; justify-self: center; text-align: center; max-width: 760px; margin: auto; padding: 4rem 2rem; }
+.episode__transition h2 { font: 700 clamp(2rem, 4vw, 4rem)/1 var(--font-sans); letter-spacing: -.035em; margin: .8rem 0 1rem; }
+.episode__transition p { color: #d2dbea; line-height: 1.6; }
+.episode__transition button { margin-top: 1.25rem; border: 0; border-radius: var(--radius-sm); background: var(--rt-accent); color: white; padding: 1rem 1.35rem; font-weight: 700; }
 .episode__choices { display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; }
 .episode__choices button { border: 1px solid #8997ad; color: #fff; background: #ffffff0d; border-radius: var(--radius-sm); padding: 1rem 1.4rem; }
 .episode__choices button:last-child { background: var(--rt-accent); border-color: var(--rt-accent); color: var(--rt-white); font-weight: 700; }
@@ -30,6 +38,10 @@
 .episode__chapters button.is-current { color: #fff; border-color: var(--rt-accent); }
 .episode__chapters span { display: block; font-size: .72rem; }
 .episode__chapters small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.episode__segments { max-width: 1200px; margin: 1rem auto; display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+.episode__segments span { border-top: 2px solid #40516d; padding: .7rem .2rem; color: #93a2b9; font-size: .78rem; }
+.episode__segments span.is-current { border-color: var(--rt-accent); color: white; }
+.episode__segments span.is-complete { border-color: #6a8d78; color: #b8cfc0; }
 .episode__controls { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; color: #aebbd0; }
 .episode__controls button { background: var(--rt-white); color: var(--rt-navy); min-width: 150px; }
 .episode__drawer { position: fixed; top: 0; right: 0; z-index: 10; width: min(430px, 92vw); height: 100dvh; overflow: auto; background: var(--rt-white); color: var(--rt-navy); padding: 2rem; box-shadow: -20px 0 70px rgba(4,15,34,.45); }

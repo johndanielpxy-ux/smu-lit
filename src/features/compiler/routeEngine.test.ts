@@ -23,6 +23,20 @@ describe("evaluateRoute", () => {
     expect(result.sourceRefIds).toContain("material-redline-rule");
   });
 
+  it("can safely escalate from one verified controlling fact without inventing missing facts", () => {
+    const result = evaluateRoute({
+      useCase: demoUseCase,
+      verifiedFacts: { materialRedline: true },
+      unresolvedMaterialFindingIds: [],
+    });
+
+    expect(result).toMatchObject({
+      route: "legal_review",
+      reasonCode: "PLAYBOOK_MATCH",
+      matchedRuleIds: ["material-redline-review"],
+    });
+  });
+
   it("requires verification before returning a low-risk route", () => {
     const result = evaluateRoute({
       useCase: demoUseCase,

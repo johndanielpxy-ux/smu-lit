@@ -1,21 +1,19 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { contractTrainingContent } from "./demo/contractScenarios";
 import { demoUseCase } from "./demo/demoUseCase";
-import { approveUseCase, isApprovalCurrent } from "./domain/approval";
+import { approveUseCase } from "./domain/approval";
 import { createScopedEventReporter, type MatterShiftEventReporter } from "./domain/integration";
 import type { MatterShiftEvent, UseCase } from "./domain/mattershift";
 import { ChangeImpactPanel } from "./features/change-impact/ChangeImpactPanel";
 import { assessChangeImpact } from "./features/change-impact/changeImpact";
 import { LearningReview } from "./features/coaching/LearningReview";
 import { deriveLearningReview, type LearningReviewResult } from "./features/coaching/coachingEngine";
-import type { GeneratedModuleDraft } from "./domain/generation";
 import { compileApprovedTrainingModule, type CompiledLawfloBundle } from "./features/compiler/bundleCompiler";
 import { clearPublishedBundle, loadPublishedBundle, savePublishedBundle } from "./features/compiler/bundleStorage";
 import { prepareDraftFromDemoPack } from "./features/compiler/compiler";
 import { EpisodePlayer } from "./features/episode/EpisodePlayer";
+import { preparedEpisodeMedia } from "./features/episode/episodeMedia";
 import { clearEpisode } from "./features/episode/episodeStorage";
-import { GeneratedDraftPanel } from "./features/generation/GeneratedDraftPanel";
-import { applyGeneratedDraft } from "./features/generation/applyGeneratedDraft";
 import { useNarration } from "./features/generation/useNarration";
 import { getEvents, recordEvent, resetDemo } from "./features/events/eventStore";
 import { EvidenceInspector } from "./features/evidence/EvidenceInspector";
@@ -27,6 +25,13 @@ import { createRehearsalState } from "./features/rehearsal/rehearsalReducer";
 import { clearRehearsal, loadRehearsal } from "./features/rehearsal/rehearsalStorage";
 import { DemoPackInput } from "./features/studio/DemoPackInput";
 import type { DemoPack } from "./features/studio/demoPack";
+import { ProductionScreen } from "./features/studio/ProductionScreen";
+import { PreviewScreen } from "./features/studio/PreviewScreen";
+import { WelcomeScreen } from "./features/platform/WelcomeScreen";
+import { RoleScreen } from "./features/platform/RoleScreen";
+import { PublishedScreen } from "./features/platform/PublishedScreen";
+import { createPlatformJourney, platformJourneyReducer } from "./features/platform/platformJourney";
+import { visibleLearnerNavigation } from "./features/platform/learnerNavigation";
 
 const emptyScope = { bundleId: "unpublished", sourceVersion: "draft", contractVersion: "draft", approvalFingerprint: "draft" };
 
@@ -34,11 +39,14 @@ function EventLedger({ events }: { events: MatterShiftEvent[] }) {
   return <aside className="platform-ledger"><div><span>Observed actions</span><strong>{events.length}</strong></div>{events.length ? <ol>{events.map((event) => <li key={event.id}><b>{event.type}</b><small>{event.metadata?.sourceVersion ? `v${event.metadata.sourceVersion}` : "draft"}</small></li>)}</ol> : <p>No actions recorded yet.</p>}</aside>;
 }
 
-export function App() {
+interface AppProps {
+  productionStepDurationMs?: number;
+}
+
+export function App({ productionStepDurationMs = 900 }: AppProps) {
   const narration = useNarration();
   const [restoredBundle] = useState(() => loadPublishedBundle());
   const [useCase, setUseCase] = useState<UseCase>(() => restoredBundle?.useCase ?? structuredClone(demoUseCase));
-  const [draftPrepared, setDraftPrepared] = useState(Boolean(restoredBundle));
   const [bundle, setBundle] = useState<CompiledLawfloBundle | undefined>(restoredBundle);
   const [events, setEvents] = useState<MatterShiftEvent[]>([]);
   const [review, setReview] = useState<LearningReviewResult | undefined>(() => {
@@ -46,18 +54,17 @@ export function App() {
     const restored = loadRehearsal({ bundleId: restoredBundle.manifest.bundleId, sourceVersion: restoredBundle.manifest.sourceVersion, contractVersion: restoredBundle.rehearsal.scenario.contractVersion, approvalFingerprint: restoredBundle.manifest.approvalFingerprint });
     return restored?.task === "complete" ? deriveLearningReview(restored, restoredBundle.coaching) : undefined;
   });
-  const [demoPack, setDemoPack] = useState<DemoPack>();
-  const [status, setStatus] = useState(restoredBundle ? "Published module restored" : "Load five governed inputs to begin");
+  const [, setDemoPack] = useState<DemoPack>();
+  const [authoringStage, setAuthoringStage] = useState<"intake" | "production" | "preview">("intake");
   const [error, setError] = useState<string>();
   const [governedOpen, setGovernedOpen] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+  const [platform, platformDispatch] = useReducer(platformJourneyReducer, Boolean(restoredBundle), createPlatformJourney);
   const [journey, journeyDispatch] = useReducer(journeyReducer, restoredBundle, (restored) => {
     if (!restored) return createJourneyState(emptyScope);
     const scope = { bundleId: restored.manifest.bundleId, sourceVersion: restored.manifest.sourceVersion, contractVersion: restored.rehearsal.scenario.contractVersion, approvalFingerprint: restored.manifest.approvalFingerprint };
     return loadJourney(scope) ?? journeyReducer(createJourneyState(scope), { type: "BUNDLE_PUBLISHED", scope });
   });
-  const studioHeading = useRef<HTMLHeadingElement>(null);
-  const approvalCurrent = isApprovalCurrent(useCase);
 
   useEffect(() => { if (bundle) saveJourney(journey); }, [bundle, journey]);
 
@@ -77,36 +84,31 @@ export function App() {
     };
   }, [bundle]);
 
-  async function handlePack(pack: DemoPack) {
-    try { setError(undefined); setStatus("Checking the approved workflow markers…"); const draft = await prepareDraftFromDemoPack(pack); setDemoPack(pack); setUseCase(draft); setDraftPrepared(true); setStatus("Draft ready for named approval"); }
-    catch (caught) { setError(caught instanceof Error ? caught.message : "The demo pack could not be prepared."); }
-  }
-  function handleGeneratedDraft(generatedModuleDraft: GeneratedModuleDraft) {
-    if (!demoPack) {
-      setError("Reload the governed input pack before attaching a generated draft.");
-      return;
-    }
-    setUseCase((current) => applyGeneratedDraft(current, generatedModuleDraft, demoPack));
-    setStatus("Generated draft ready for human approval");
-  }
-  function handleApprove() {
+  async function handleCreate(pack: DemoPack) {
     try {
+      setError(undefined);
+      const draft = await prepareDraftFromDemoPack(pack);
+      setDemoPack(pack);
+      setUseCase(draft);
+      setAuthoringStage("production");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "The source pack could not be prepared.");
+    }
+  }
+  function handleApproveAndPublish() {
+    try {
+      setError(undefined);
       const approved = approveUseCase(useCase, "Jordan Lee (synthetic reviewer)");
       setUseCase(approved);
       recordEvent({ useCaseId: approved.id, type: "human_approved", metadata: { sourceVersion: approved.sourceVersion, approvalFingerprint: approved.approvalRecord!.contentFingerprint } }, { idempotencyKey: `approval:${approved.approvalRecord!.contentFingerprint}` });
-      setEvents(getEvents(approved.id, approved.sourceVersion)); setStatus("Exact workflow, scenarios and sources approved");
-    } catch (caught) { setError(caught instanceof Error ? caught.message : "Approval could not be recorded."); }
-  }
-  function handlePublish() {
-    try {
-      setError(undefined);
-      const nextBundle = compileApprovedTrainingModule(useCase, contractTrainingContent);
+      const nextBundle = compileApprovedTrainingModule(approved, contractTrainingContent);
       const metadata = { bundleId: nextBundle.manifest.bundleId, sourceVersion: nextBundle.manifest.sourceVersion, contractVersion: nextBundle.rehearsal.scenario.contractVersion, approvalFingerprint: nextBundle.manifest.approvalFingerprint };
-      recordEvent({ useCaseId: useCase.id, type: "use_case_compiled", metadata }, { idempotencyKey: `compile:${nextBundle.manifest.bundleId}` });
-      recordEvent({ useCaseId: useCase.id, type: "module_published", metadata }, { idempotencyKey: `publish:${nextBundle.manifest.bundleId}` });
-      savePublishedBundle(nextBundle); setBundle(nextBundle); setEvents(getEvents(useCase.id, useCase.sourceVersion)); setStatus("Module published");
+      recordEvent({ useCaseId: approved.id, type: "use_case_compiled", metadata }, { idempotencyKey: `compile:${nextBundle.manifest.bundleId}` });
+      recordEvent({ useCaseId: approved.id, type: "module_published", metadata }, { idempotencyKey: `publish:${nextBundle.manifest.bundleId}` });
+      savePublishedBundle(nextBundle); setBundle(nextBundle); setEvents(getEvents(approved.id, approved.sourceVersion));
       journeyDispatch({ type: "BUNDLE_PUBLISHED", scope: { bundleId: nextBundle.manifest.bundleId, sourceVersion: nextBundle.manifest.sourceVersion, contractVersion: nextBundle.rehearsal.scenario.contractVersion, approvalFingerprint: nextBundle.manifest.approvalFingerprint } });
-    } catch (caught) { setError(caught instanceof Error ? caught.message : "Publication failed safely."); }
+      platformDispatch({ type: "MODULE_PUBLISHED" });
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Approval and publication failed safely."); }
   }
   function finishRehearsal() {
     if (!bundle) return;
@@ -115,8 +117,8 @@ export function App() {
   }
   function reset() {
     resetDemo(); clearJourney(); clearPublishedBundle(); if (bundle) { clearEpisode(bundle.manifest.bundleId); clearRehearsal(bundle.manifest.bundleId); }
-    narration.clear(); setUseCase(structuredClone(demoUseCase)); setDemoPack(undefined); setDraftPrepared(false); setBundle(undefined); setReview(undefined); setEvents([]); setStatus("Load five governed inputs to begin"); setError(undefined); setGovernedOpen(false); setResetKey((value) => value + 1); journeyDispatch({ type: "RESET" });
-    window.setTimeout(() => studioHeading.current?.focus(), 0);
+    narration.clear(); setUseCase(structuredClone(demoUseCase)); setDemoPack(undefined); setAuthoringStage("intake"); setBundle(undefined); setReview(undefined); setEvents([]); setError(undefined); setGovernedOpen(false); setResetKey((value) => value + 1); journeyDispatch({ type: "RESET" });
+    platformDispatch({ type: "RESET" });
   }
 
   const changedImpact = useMemo(() => {
@@ -126,16 +128,19 @@ export function App() {
   }, [bundle]);
 
   const stage = bundle ? journey.stage : "studio";
+  if (platform.stage === "welcome") return <WelcomeScreen onEnter={() => platformDispatch({ type: "ENTER" })} onBrowse={bundle ? () => platformDispatch({ type: "BROWSE_AS_LEARNER" }) : undefined} />;
+  if (platform.stage === "role") return <RoleScreen learnerAvailable={Boolean(bundle)} onBack={() => platformDispatch({ type: "BACK_TO_WELCOME" })} onSelect={(role) => platformDispatch({ type: "SELECT_ROLE", role })} />;
+  if (platform.stage === "published" && bundle) return <PublishedScreen title={bundle.episode.title} onViewAsLearner={() => platformDispatch({ type: "VIEW_AS_LEARNER" })} />;
+  if (platform.stage === "studio" && authoringStage === "production") return <ProductionScreen mode="prepared" stepDurationMs={productionStepDurationMs} onComplete={() => setAuthoringStage("preview")} />;
+  if (platform.stage === "studio" && authoringStage === "preview") return <PreviewScreen title={useCase.generatedModuleDraft?.title ?? useCase.title} onApprovePublish={handleApproveAndPublish} />;
+  if (platform.stage === "studio") return <div className="studio-shell"><a className="skip-link" href="#main-content">Skip to content</a><nav className="studio-nav" aria-label="Legal engineer studio"><button type="button" className="entry__brand" onClick={reset}><span>LF</span><strong>LAWFLO</strong></button><span>Legal engineer</span></nav>{error ? <div className="platform-error" role="alert"><strong>LAWFLO paused safely.</strong><span>{error}</span><button type="button" onClick={() => setError(undefined)}>Dismiss</button></div> : null}<main id="main-content" className="studio-main"><DemoPackInput key={resetKey} onReady={setDemoPack} onCreate={(pack) => void handleCreate(pack)} onEvent={prePublishReporter} /></main></div>;
   return <div className="platform-shell">
     <a className="skip-link" href="#main-content">Skip to content</a>
-    <div className="utility-bar"><span>Legal AI learning infrastructure</span><div><span>Singapore prototype</span><span>Source-controlled</span><span>Human-approved</span></div></div>
-    <header className="platform-header"><button className="platform-brand" type="button" onClick={() => bundle ? journeyDispatch({ type: "GO_TO", stage: "catalogue" }) : studioHeading.current?.focus()}><span>LF</span><span className="platform-brand__wordmark">LAWFLO<small>Workflow learning for legal teams</small></span></button><nav aria-label="Learning journey">{bundle && ["Episode", "Rehearsal", "Review", "Guide"].map((label) => { const target = label.toLowerCase() as "episode" | "rehearsal" | "review" | "guide"; return <button key={label} type="button" aria-current={stage === target ? "page" : undefined} onClick={() => journeyDispatch({ type: "GO_TO", stage: target })}>{label}</button>; })}</nav><div className="platform-actions"><button type="button" onClick={() => setGovernedOpen((value) => !value)} disabled={!bundle}>How this is governed</button><button type="button" onClick={reset}>Reset demo</button></div></header>
+    <header className="platform-header"><button className="platform-brand" type="button" onClick={() => journeyDispatch({ type: "GO_TO", stage: "catalogue" })}><span>LF</span><span className="platform-brand__wordmark">LAWFLO<small>Workflow learning for legal teams</small></span></button><nav aria-label="Learning journey">{bundle && visibleLearnerNavigation(journey).map(({ label, stage: target }) => <button key={label} type="button" aria-current={stage === target ? "page" : undefined} onClick={() => journeyDispatch({ type: "GO_TO", stage: target })}>{label}</button>)}</nav><div className="platform-actions"><button type="button" onClick={() => setGovernedOpen((value) => !value)} disabled={!bundle}>How this is governed</button><button type="button" onClick={reset}>Reset demo</button></div></header>
     {error && <div className="platform-error" role="alert"><strong>LAWFLO paused safely.</strong><span>{error}</span><button type="button" onClick={() => setError(undefined)}>Dismiss</button></div>}
 
-    {stage === "studio" && <><aside className="awards-strip" aria-label="Platform safeguards"><span><b>01</b> Approved workflow sources</span><span><b>02</b> Named human approval</span><span><b>03</b> Observable learning evidence</span></aside><main id="main-content" className="platform-main"><section className="platform-hero"><div><span>Learn the workflow. Rehearse the judgment.</span><h1 ref={studioHeading} tabIndex={-1}>Turn legal AI pioneers into everyday practice.</h1><p>LAWFLO turns an approved legal-engineering workflow into a peer-led episode, a realistic contract matter and a source-linked desk guide.</p></div><aside className="platform-hero__brief"><span>Current learning matter</span><strong>AI-assisted contract review</strong><dl><div><dt>Workflow</dt><dd>Sales renewal routing</dd></div><div><dt>Control</dt><dd>Human verification</dd></div><div><dt>Evidence</dt><dd>Source-linked record</dd></div></dl></aside></section><DemoPackInput key={resetKey} onReady={(pack) => void handlePack(pack)} onEvent={prePublishReporter} /><GeneratedDraftPanel pack={demoPack} draft={useCase.generatedModuleDraft} approvalFingerprint={approvalCurrent ? useCase.approvalRecord?.contentFingerprint : undefined} onGenerated={handleGeneratedDraft} narration={narration} /><section className="publication"><div><span>Publication boundary</span><h2>{useCase.generatedModuleDraft?.title ?? useCase.title}</h2><p>{status}</p></div><div><button type="button" onClick={handleApprove} disabled={!draftPrepared || approvalCurrent}>Approve exact version</button><button type="button" onClick={handlePublish} disabled={!approvalCurrent}>Publish learning module</button></div></section>{bundle && changedImpact && <ChangeImpactPanel result={changedImpact} />}</main><footer className="site-footer"><div><strong>LAWFLO</strong><p>Firm-owned legal AI workflows, taught through practice.</p></div><div><span>Prototype scope</span><p>Synthetic training matter · No client systems connected</p></div><div><span>Governance</span><p>Source-linked · Versioned · Human-approved</p></div></footer></>}
-
-    {stage === "catalogue" && bundle && <main id="main-content" className="catalogue"><section><span>Ready to learn the workflow</span><h1>One episode.<br/>One matter.<br/>One safer habit.</h1><p>Watch Maya catch the AI’s missed liability redline, then work the same legal AI workflow yourself.</p><button type="button" onClick={() => journeyDispatch({ type: "GO_TO", stage: "episode" })}>Watch episode</button></section><article><span>LAWFLO INTERACTIVE STORY · S1:E1</span><h2>{bundle.episode.title}</h2><p>100 sec · Deterministic · Source-linked and human-approved</p><strong>Featuring Maya Tan</strong></article></main>}
-    {stage === "episode" && bundle && scopedReporter && <EpisodePlayer bundle={bundle} narrationUrl={narration.url} onEvent={scopedReporter} onComplete={() => journeyDispatch({ type: "EPISODE_COMPLETED" })} />}
+    {stage === "catalogue" && bundle && <main id="main-content" className="catalogue"><section><span>Ready to learn the workflow</span><h1>One episode.<br/>One matter.<br/>One safer habit.</h1><p>Watch Maya catch the AI’s missed liability redline, then work the same legal AI workflow yourself.</p><button type="button" onClick={() => journeyDispatch({ type: "GO_TO", stage: "episode" })}>Watch episode</button></section><article><span>LAWFLO INTERACTIVE STORY · S1:E1</span><h2>{bundle.episode.title}</h2><p>30 sec · Two cinematic scenes · One decision</p><strong>Featuring Maya Tan</strong></article></main>}
+    {stage === "episode" && bundle && scopedReporter && <EpisodePlayer bundle={bundle} narrationUrl={narration.url} media={preparedEpisodeMedia} onEvent={scopedReporter} onComplete={() => journeyDispatch({ type: "EPISODE_COMPLETED" })} />}
     {stage === "rehearsal" && bundle && scopedReporter && <MatterWorkspace bundle={bundle} mode="guided" onEvent={scopedReporter} onComplete={finishRehearsal} />}
     {stage === "review" && review && scopedReporter && <LearningReview result={review} onRepair={() => journeyDispatch({ type: "GO_TO", stage: "rehearsal" })} onOpenGuide={() => { journeyDispatch({ type: "REVIEW_OPENED" }); journeyDispatch({ type: "OPEN_GUIDE" }); }} onOpenSource={(sourceRefId) => scopedReporter("source_opened", { sourceRefId })} />}
     {stage === "guide" && bundle && review && scopedReporter && <WorkflowGuide bundle={bundle} review={review} onEvent={scopedReporter} onStartSoloReplay={() => journeyDispatch({ type: "START_SOLO_REPLAY" })} />}

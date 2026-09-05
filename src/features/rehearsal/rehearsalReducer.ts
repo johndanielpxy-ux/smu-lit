@@ -51,8 +51,11 @@ function append(state: RehearsalState, action: string, task: RehearsalTask, sour
   return { ...state, sequence, trace: [...state.trace, { id: `trace-${sequence}`, action, task, occurredAtSequence: sequence, sourceRefIds: [...sourceRefIds], safe }] };
 }
 function sameValue(left: unknown, right: unknown): boolean { return left === right; }
+function focusFindings(scenario: ContractScenario) {
+  return scenario.aiFindings.filter((finding) => !sameValue(finding.proposedValue, finding.verifiedValue));
+}
 function incompleteRepair(state: RehearsalState, scenario: ContractScenario, bundle: CompiledLawfloBundle): RehearsalTask | undefined {
-  const incorrect = scenario.aiFindings.some((finding) => finding.material && (!state.findingResolutions[finding.id] || !sameValue(state.findingResolutions[finding.id].value, finding.verifiedValue)));
+  const incorrect = focusFindings(scenario).some((finding) => !state.findingResolutions[finding.id] || !sameValue(state.findingResolutions[finding.id].value, finding.verifiedValue));
   if (incorrect) return "verify_findings";
   const changed = scenario.clauses.filter((clause) => clause.materiallyChanged);
   if (changed.some((clause) => !state.openedClauseIds.includes(clause.id))) return "compare_clauses";
@@ -68,7 +71,7 @@ function buildDecision(state: RehearsalState, scenario: ContractScenario, bundle
     const resolution = state.findingResolutions[finding.id];
     if (resolution) Object.assign(verifiedFacts, { [finding.field]: resolution.value });
   }
-  return evaluateRoute({ useCase: bundle.useCase, verifiedFacts, unresolvedMaterialFindingIds: scenario.aiFindings.filter((finding) => finding.material && !state.findingResolutions[finding.id]).map((finding) => finding.id) });
+  return evaluateRoute({ useCase: bundle.useCase, verifiedFacts, unresolvedMaterialFindingIds: focusFindings(scenario).filter((finding) => !state.findingResolutions[finding.id]).map((finding) => finding.id) });
 }
 
 export function rehearsalReducer(state: RehearsalState, action: RehearsalAction, bundle: CompiledLawfloBundle): RehearsalState {
@@ -90,8 +93,10 @@ export function rehearsalReducer(state: RehearsalState, action: RehearsalAction,
       }
       const corrected = !sameValue(finding.proposedValue, finding.verifiedValue);
       const findingResolutions = { ...state.findingResolutions, [finding.id]: { status: corrected ? "corrected" as const : "confirmed" as const, value: action.value } };
-      const allResolved = scenario.aiFindings.every((item) => Boolean(findingResolutions[item.id]));
-      return append({ ...state, findingResolutions, task: allResolved ? "compare_clauses" : "verify_findings" }, corrected ? "finding_corrected" : "finding_confirmed", "verify_findings", finding.sourceRefIds, true);
+      const allResolved = focusFindings(scenario).every((item) => Boolean(findingResolutions[item.id]));
+      const comparisonAlreadyOpened = state.openedClauseIds.includes(finding.sourceClauseId);
+      const nextTask = allResolved ? (comparisonAlreadyOpened ? "apply_playbook" : "compare_clauses") : "verify_findings";
+      return append({ ...state, findingResolutions, task: nextTask }, corrected ? "finding_corrected" : "finding_confirmed", "verify_findings", finding.sourceRefIds, true);
     }
     case "OPEN_CLAUSE": {
       const clause = scenario.clauses.find((item) => item.id === action.clauseId); if (!clause) return state;

@@ -14,10 +14,12 @@
     "test:watch": "vitest",
     "pretest:e2e": "npm run build",
     "test:e2e": "playwright test",
+    "generate:demo-media": "tsx scripts/generateDemoMedia.ts",
     "preview": "vite preview",
     "preview:e2e": "vite preview --host 127.0.0.1 --port 4173"
   },
   "dependencies": {
+    "@runwayml/sdk": "^4.20.0",
     "openai": "^7.10.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

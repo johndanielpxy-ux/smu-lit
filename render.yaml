@@ -10,6 +10,8 @@ services:
     envVars:
       - key: OPENAI_API_KEY
         sync: false
+      - key: RUNWAYML_API_SECRET
+        sync: false
       - key: LAWFLO_STUDIO_TOKEN
         sync: false
       - key: OPENAI_TEXT_MODEL

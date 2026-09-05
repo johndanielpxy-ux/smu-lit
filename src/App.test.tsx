@@ -5,11 +5,24 @@ import { resetDemo } from "./features/events/eventStore";
 
 beforeEach(() => { vi.unstubAllGlobals(); resetDemo(); window.localStorage.clear(); });
 
+function renderApp() {
+  return render(<App productionStepDurationMs={1} />);
+}
+
+function enterStudio() {
+  fireEvent.click(screen.getByRole("button", { name: /enter lawflo/i }));
+  fireEvent.click(screen.getByRole("button", { name: /legal engineer/i }));
+}
+
 async function publish() {
-  fireEvent.click(screen.getByRole("button", { name: /load synthetic demo pack/i }));
-  expect(await screen.findByText(/draft ready for named approval/i)).toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: /approve exact version/i }));
-  fireEvent.click(screen.getByRole("button", { name: /publish learning module/i }));
+  if (screen.queryByRole("button", { name: /enter lawflo/i })) enterStudio();
+  fireEvent.click(screen.getByRole("button", { name: /use prepared source pack/i }));
+  expect(await screen.findByText(/5 sources ready/i)).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: /create episode/i }));
+  expect(await screen.findByRole("heading", { name: /creating your learning episode/i })).toBeVisible();
+  fireEvent.click(await screen.findByRole("button", { name: /approve and publish/i }));
+  expect(screen.getByRole("heading", { name: /your episode is ready for learners/i })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: /view as learner/i }));
   expect(screen.getByText(/ready to learn the workflow/i)).toBeVisible();
 }
 
@@ -21,64 +34,45 @@ function verifyFinding(label: string, clauseLabel: RegExp, value: string) {
 }
 
 describe("LAWFLO application", () => {
-  it("presents the institutional learning safeguards before the studio", () => {
-    render(<App />);
-    expect(screen.getByText(/legal ai learning infrastructure/i)).toBeVisible();
-    expect(screen.getByRole("complementary", { name: /platform safeguards/i })).toHaveTextContent(/approved workflow sources/i);
-    expect(screen.getByRole("contentinfo")).toHaveTextContent(/synthetic training matter/i);
+  it("opens with one clear action before asking the user to choose a role", () => {
+    renderApp();
+    expect(screen.getByRole("heading", { name: /turn firm knowledge into safer practice/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: /enter lawflo/i })).toBeVisible();
+    expect(screen.queryByText(/approved workflow sources/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /publish learning module/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /enter lawflo/i }));
+    expect(screen.getByRole("heading", { name: /how will you use lawflo today/i })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /legal engineer/i }));
+    expect(screen.getByText(/legal engineer studio/i)).toBeVisible();
   });
 
-  it("treats a generated episode as a new draft that requires fresh approval", async () => {
-    const generated = {
-      schemaVersion: "1.0",
-      title: "Generated redline episode",
-      learningObjectives: ["Verify AI findings."],
-      chapters: ["intake", "review", "route"].map((id) => ({
-        id,
-        title: id,
-        narration: `${id} narration`,
-        sourceRefIds: [id === "route" ? "playbook" : "workflow"],
-        shots: [1, 2, 3].map((shot) => ({ id: `${id}-${shot}`, prompt: `Shot ${shot}` })),
-      })),
-      checkpoint: {
-        question: "Where should it go?",
-        options: [{ id: "legal", label: "Legal" }, { id: "business", label: "Business" }],
-        correctOptionId: "legal",
-        explanation: "The playbook controls.",
-        sourceRefIds: ["playbook"],
-      },
-    };
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ draft: generated })));
-    render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: /load synthetic demo pack/i }));
-    expect(await screen.findByText(/draft ready for named approval/i)).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: /approve exact version/i }));
-    expect(screen.getByRole("button", { name: /approve exact version/i })).toBeDisabled();
-    fireEvent.change(screen.getByLabelText(/studio production token/i), { target: { value: "token" } });
-    fireEvent.click(screen.getByRole("button", { name: /generate source-linked draft/i }));
-    expect(await screen.findByRole("heading", { level: 3, name: "Generated redline episode" })).toBeVisible();
-    expect(screen.getByText(/generated draft ready for human approval/i)).toBeVisible();
-    expect(screen.getByRole("button", { name: /approve exact version/i })).toBeEnabled();
-    expect(screen.getByRole("button", { name: /publish learning module/i })).toBeDisabled();
+  it("keeps generation and publication out of sight until the sources are ready", async () => {
+    renderApp();
+    enterStudio();
+    expect(screen.getByRole("button", { name: /create episode/i })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /approve and publish/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /use prepared source pack/i }));
+    expect(screen.getByRole("button", { name: /create episode/i })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: /create episode/i }));
+    expect(await screen.findByRole("heading", { name: /creating your learning episode/i })).toBeVisible();
+    expect(screen.queryByRole("button", { name: /approve and publish/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /approve and publish/i })).toBeVisible();
   });
 
   it("publishes and enters the complete legal AI learning journey", async () => {
-    render(<App />);
+    renderApp();
     expect(screen.queryByText(/Ananya|Krishiv|Su-Ann/i)).not.toBeInTheDocument();
     await publish();
     fireEvent.click(screen.getByRole("button", { name: /watch episode/i }));
-    fireEvent.click(screen.getByRole("button", { name: /chapter 6/i }));
+    fireEvent.ended(screen.getByTitle(/prepared training episode/i));
     fireEvent.click(screen.getByRole("button", { name: /escalate to legal review/i }));
-    fireEvent.click(screen.getByRole("button", { name: /continue to rehearsal/i }));
+    fireEvent.ended(screen.getByTitle(/prepared training episode/i));
+    fireEvent.click(screen.getByRole("button", { name: /start guided rehearsal/i }));
     expect(screen.getByRole("heading", { level: 1, name: /northstar analytics sales renewal/i })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /open northstar matter/i }));
     fireEvent.click(screen.getByRole("button", { name: /run ai review/i }));
-    verifyFinding("Contract value", /compare commercial terms clause/i, "42000");
-    verifyFinding("Template version", /compare commercial terms clause/i, "2026.2");
-    verifyFinding("Personal data processing", /compare commercial terms clause/i, "false");
-    verifyFinding("Governing law", /compare governing law clause/i, "Singapore");
     verifyFinding("Material standard-term change", /compare liability clause/i, "true");
-    fireEvent.click(screen.getByRole("button", { name: /compare liability clause/i }));
     fireEvent.click(screen.getByRole("button", { name: /open material standard-term changes require legal review/i }));
     fireEvent.click(screen.getByRole("button", { name: /choose legal review/i }));
     fireEvent.change(screen.getByRole("textbox", { name: /explain your route/i }), { target: { value: "The liability cap was removed, so the material-redline rule requires legal review." } });
@@ -90,16 +84,17 @@ describe("LAWFLO application", () => {
   });
 
   it("enforces approval before publication and fully resets", async () => {
-    render(<App />);
-    expect(screen.getByRole("button", { name: /publish learning module/i })).toBeDisabled();
+    renderApp();
+    enterStudio();
+    expect(screen.getByRole("button", { name: /create episode/i })).toBeDisabled();
     await publish();
     fireEvent.click(screen.getByRole("button", { name: /reset demo/i }));
-    expect(screen.getByRole("heading", { name: /turn legal ai pioneers into everyday practice/i })).toBeVisible();
-    expect(screen.getByRole("button", { name: /publish learning module/i })).toBeDisabled();
+    expect(screen.getByRole("heading", { name: /turn firm knowledge into safer practice/i })).toBeVisible();
+    expect(screen.queryByRole("button", { name: /create episode/i })).not.toBeInTheDocument();
   });
 
   it("keeps governance evidence inspectable but subordinate", async () => {
-    render(<App />);
+    renderApp();
     await publish();
     expect(screen.queryByRole("heading", { name: /evidence chain/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /how this is governed/i }));
@@ -108,12 +103,14 @@ describe("LAWFLO application", () => {
   });
 
   it("restores a published journey after a browser refresh", async () => {
-    const first = render(<App />);
+    const first = renderApp();
     await publish();
     fireEvent.click(screen.getByRole("button", { name: /watch episode/i }));
     first.unmount();
 
-    render(<App />);
+    renderApp();
+    expect(screen.getByRole("button", { name: /explore learner training/i })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /explore learner training/i }));
     expect(screen.getByRole("heading", { name: /ai-assisted contract review/i })).toBeVisible();
     expect(screen.getByRole("button", { name: /reset demo/i })).toBeVisible();
   });

@@ -15,16 +15,18 @@ Say: “The same pipeline writes the source-linked script and storyboard, then
 Runway produces the cinematic scenes. For a reliable three-minute demo, this is
 the approved render we generated beforehand.”
 
-**0:38 — Keep a human in control.** Preview the episode, select **Approve and
-publish**, then **View as learner**.
+**0:38 — Keep a human in control.** On the completed preview, select **Approve
+and publish**, then **View as learner**.
 
-**0:50 — Learn through the episode.** Select **Start episode**. At the checkpoint,
-choose the unsafe low-risk route once, read the short correction, then choose
-**Escalate to Legal review**. Let the final segment finish.
+**0:50 — Learn through the episode.** Select **Watch episode**, then **Play
+episode**. At the checkpoint, choose **Send to business approval** once, read
+the short correction, then choose **Escalate to legal review**. Select
+**Continue episode** and let the final segment finish.
 
 **1:42 — Transfer learning into practice.** Select **Start guided rehearsal**.
-Run the legal AI review, open the liability finding and verify it against the
-agreement. Open the matched playbook rule, choose **Legal review**, enter a short
+Select **Open Northstar matter**, run the legal AI review, open **Material
+standard-term change**, compare the liability clause and verify the value as
+`true`. Open the matched playbook rule, choose **Legal review**, enter a short
 reason and submit.
 
 **2:42 — Show constructive feedback.** Point to the verified behaviour, one
@@ -36,13 +38,14 @@ into something every lawyer can watch, practise and use safely.”
 ## Demonstration constraints
 
 - Rehearse to a maximum runtime of 2:55.
-- Reset and preload the prepared episode before presenting.
+- Reset immediately before presenting; the prepared source pack and approved
+  media are built into the release.
 - Use a desktop viewport of at least 1024 pixels and browser zoom at 100%.
 - Do not wait for a fresh Runway generation during judging.
 - Do not open source drawers, governance evidence, solo replay or the desk guide
   unless a judge asks.
-- Describe the prepared render honestly. The product has a live Runway path, but
-  the presentation uses the output generated beforehand.
+- Describe the prepared render honestly. The product has a server-only Runway
+  generation path, while the three-minute presentation uses its approved output.
 
 ## DevPost walkthrough
 
