@@ -8,9 +8,8 @@
 ## 1. Product decision
 
 LAWFLO is a desktop-first platform that turns an approved, firm-specific legal
-workflow into a source-linked learning episode, a safe matter simulation, an
-independent challenge, an explainable review and a reusable point-of-work
-guide.
+workflow into a source-linked learning episode, a progressively guided matter
+rehearsal, a constructive learning review and a reusable point-of-work guide.
 
 The prototype has two connected experiences:
 
@@ -25,7 +24,7 @@ arbitrary training content from any uploaded document.
 
 The production vision may use document extraction and generative models, but
 the hackathon demonstration proves the harder product mechanics: governance,
-source lineage, interactive learning, safe practice, observable assessment and
+source lineage, interactive learning, safe practice, observable coaching and
 change control.
 
 ## 2. Problem and value proposition
@@ -46,19 +45,19 @@ Firm materials + contributor portrait
         human approval + sources
                  |
                  v
-   episode -> guided rehearsal -> challenge
-                 |                   |
-                 +---------+---------+
-                           v
-              evidence-based review
-                           |
-                           v
-                point-of-work guide
+       episode -> progressively guided rehearsal
+                              |
+                              v
+                  evidence-based learning review
+                              |
+                    +---------+---------+
+                    v                   v
+          point-of-work guide    optional solo replay
 ```
 
 The differentiator is not video generation alone. LAWFLO joins content
-generation to safe performance practice and shows why a learner passed or
-failed using the exact observed actions and source-backed rules.
+generation to safe performance practice and uses exact observed actions plus
+source-backed rules to decide where the learner needs more or less support.
 
 ## 3. Actors
 
@@ -79,10 +78,11 @@ The lawyer:
 
 - watches the interactive peer-led episode;
 - answers the in-episode safety checkpoint;
-- completes the workflow once with guidance;
-- completes a shorter changed-matter challenge independently;
-- receives an evidence-linked review;
-- opens the final point-of-work guide.
+- completes one rehearsal whose guidance decreases as confidence grows;
+- repairs incomplete or unsafe steps with contextual support;
+- receives an evidence-linked learning review;
+- opens the final point-of-work guide;
+- may optionally replay the workflow without guidance.
 
 ### 3.3 Responsible reviewer
 
@@ -139,8 +139,8 @@ Preparation runs visible compiler stages:
 2. Resolve workflow steps
 3. Link guardrails to sources
 4. Build episode timeline
-5. Build guided and challenge scenarios
-6. Build assessment rubric
+5. Build the progressive rehearsal and optional replay configuration
+6. Build the coaching and reinforcement rules
 7. Build point-of-work guide
 
 The stage display represents real deterministic functions, not timed theatre.
@@ -167,7 +167,7 @@ jumping into a developer dashboard. It includes:
 - contributor portrait and role;
 - module title, practice group and intended learner;
 - episode length and chapter count;
-- guided rehearsal and challenge labels;
+- rehearsal structure and optional solo-replay label;
 - learning objectives;
 - source and approval status;
 - **Begin episode** as the primary learner action.
@@ -191,13 +191,15 @@ workflow. It includes:
 
 The learner cannot seek beyond an unanswered checkpoint. A wrong answer shows
 the relevant policy explanation and allows another attempt. Episode completion
-does not itself count as workflow competence.
+does not itself show that the learner can use the workflow; it prepares the
+learner to practise it.
 
-### 5.5 Guided matter rehearsal
+### 5.5 Progressively guided matter rehearsal
 
-The guided rehearsal opens a single LAWFLO matter workspace. It resembles real
-desktop legal work without copying or claiming integration with any commercial
-application.
+The rehearsal opens a single LAWFLO matter workspace. It resembles real desktop
+legal work without copying or claiming integration with any commercial
+application. It is one continuous learning experience rather than a separate
+lesson followed by an examination.
 
 The workspace contains:
 
@@ -221,30 +223,50 @@ The learner completes these meaningful actions:
 7. Revise the client-team update using verified information.
 8. Submit the work for human review.
 
-Guided mode provides contextual hints and immediate explanations. The unsafe
-action is allowed as an attempt inside the sandbox, recorded, quarantined and
-explained. No information leaves the browser.
+Each task follows a progressive-support loop:
 
-### 5.6 Independent challenge
+1. **Orient:** explain the objective and identify the relevant matter context.
+2. **Attempt:** ask the learner to act before revealing an answer.
+3. **Assist:** keep hints available but initially collapsed.
+4. **Protect:** quarantine an unsafe external action and explain its risk.
+5. **Verify:** compare the result with a transcript, source or policy.
+6. **Reflect:** identify what the learner handled well and what to repair.
 
-After guided rehearsal, the learner receives a shorter variation of the same
-approved workflow. The names, dates, assignments and research issue differ,
-but the rules and required actions remain source-equivalent.
+Guidance fades during the same rehearsal. Early tasks identify both the
+objective and likely tool. Middle tasks identify the objective while leaving
+the action to the learner. Final tasks ask the learner to prepare and submit
+the update with minimal prompting. Successful first attempts move forward
+without unnecessary explanation. Repeated or safety-critical errors reveal
+progressively stronger support.
 
-Challenge mode:
+The unsafe action is allowed as an attempt inside the sandbox, recorded,
+quarantined and explained. No information leaves the browser. A learner cannot
+permanently fail: safety-critical omissions trigger a focused repair attempt
+before the rehearsal completes.
+
+### 5.6 Optional solo replay
+
+After the learning review, LAWFLO offers **Try this workflow without guidance**.
+This is a confidence-building option, not a qualification gate. It uses a
+shorter variation of the same approved workflow. Names, dates, assignments and
+the research issue differ, while the governing rules remain source-equivalent.
+
+Optional replay mode:
 
 - hides the workflow hints;
-- does not reveal correctness after ordinary actions;
+- keeps source and matter materials available;
+- does not interrupt ordinary actions with coaching;
 - records the complete decision trace;
-- quarantines only actions that would represent external disclosure or sending;
-- allows submission when the learner believes the work is complete.
+- quarantines actions that would represent an external disclosure or sending;
+- produces a comparison with the learner's guided attempt.
 
-The challenge prevents the review from measuring only memory of the immediately
-preceding guided screens.
+Skipping or stopping the replay never removes access to the workflow guide and
+never labels the learner unfit to use the workflow.
 
-### 5.7 Evidence-based review
+### 5.7 Evidence-based learning review
 
-The review engine assesses both process and work product.
+The coaching engine reviews both process and work product to choose constructive
+feedback and reinforcement. It does not certify fitness to use the workflow.
 
 **Process evidence** includes:
 
@@ -262,9 +284,9 @@ The review engine assesses both process and work product.
 - whether unsupported research propositions were removed;
 - whether the final update contains the expected safe sections.
 
-The assessment returns one result per dimension:
+The review returns one learning state per dimension:
 
-| Dimension | Required evidence | Failure example |
+| Dimension | Evidence of progress | Repair trigger |
 |---|---|---|
 | Authorised tool | Approved workbench selected | Public tool selected |
 | Data minimisation | Bounded prompt contains only necessary facts | Full transcript used |
@@ -273,18 +295,22 @@ The assessment returns one result per dimension:
 | Human responsibility | Work submitted for reviewer approval | Update treated as final AI output |
 | Output completeness | Required update sections are present | Action owner omitted |
 
-There is no opaque AI-generated percentage. Overall competence requires all
-safety-critical dimensions to pass. The result explains:
+States use constructive language such as **Completed independently**,
+**Completed with guidance** and **Revisit this step**. There is no opaque
+AI-generated percentage, pass/fail verdict or fitness label. Safety-critical
+dimensions must be repaired before the guided rehearsal is marked complete.
+The review explains:
 
 > Observed action -> rule applied -> source excerpt -> required repair
 
-The learner may retry only failed portions or replay the complete challenge.
-The system may generate friendly summary wording, but the pass/fail result and
-evidence remain deterministic.
+The learner returns only to portions that need repair. The system may generate
+friendly summary wording, but the learning state, reinforcement selection and
+underlying evidence remain deterministic.
 
 ### 5.8 Point-of-work guide
 
-Passing the challenge unlocks a compact activation card containing:
+Completing the progressively guided rehearsal produces a personalised compact
+activation card containing:
 
 - when to use the workflow;
 - approved tool sequence;
@@ -314,7 +340,7 @@ GovernedCompiler -----> Approval + artefact manifest
           +-----------+-----------+
           |           |           |
           v           v           v
-    EpisodeEngine  MatterSim   ReviewEngine
+    EpisodeEngine  MatterSim   CoachingEngine
           |           |           |
           +-----------+-----------+
                       v
@@ -334,15 +360,15 @@ GovernedCompiler -----> Approval + artefact manifest
 ### 6.2 Governed compiler
 
 - validates identifiers and source references;
-- derives episode cues, simulation tasks, challenge variation, rubric and
-  activation card;
+- derives episode cues, progressive rehearsal tasks, optional replay variation,
+  coaching rules and activation card;
 - creates a content-addressed manifest;
 - refuses compilation if source links are unresolved or approval is stale.
 
 ### 6.3 Journey controller
 
-- enforces Studio -> Module -> Episode -> Guided -> Challenge -> Review ->
-  Activation;
+- enforces Studio -> Module -> Episode -> Rehearsal -> Review -> Activation;
+- exposes optional Solo Replay after Review without making it a prerequisite;
 - permits revisiting completed stages;
 - rejects stage skipping;
 - persists progress against use-case ID, source version and approval
@@ -357,17 +383,20 @@ GovernedCompiler -----> Approval + artefact manifest
 ### 6.5 Matter simulator
 
 - owns the simulated files, editors, tools, objectives and decision trace;
-- uses the same reducer for guided and challenge modes with different feedback
-  policies;
+- adapts hint strength inside the rehearsal from the observed action trace;
+- reuses the same reducer for optional solo replay with coaching interruptions
+  disabled;
 - separates user-visible workspace state from immutable expected evidence.
 
-### 6.6 Review engine
+### 6.6 Coaching engine
 
 - evaluates explicit evidence predicates;
-- returns dimension-level results and source-linked explanations;
+- returns dimension-level learning states and source-linked explanations;
+- selects progressively stronger support after an incomplete attempt;
 - never infers an action that was not recorded;
 - treats a superficially correct final document as insufficient when required
-  verification actions were skipped.
+  verification actions were skipped;
+- never produces a certification, fitness decision or permanent failure state.
 
 ### 6.7 Event store and evidence graph
 
@@ -390,8 +419,8 @@ discarded when any of these values differ:
 - approval fingerprint
 - simulation schema version
 
-The Reset control clears the journey, playback, simulation, challenge and event
-stores before returning to Studio.
+The Reset control clears the journey, playback, rehearsal, optional replay and
+event stores before returning to Studio.
 
 ## 8. Failure handling
 
@@ -407,7 +436,8 @@ stores before returning to Studio.
 | Clipboard unavailable | Keep the prompt visible and selectable |
 | Portrait unavailable | Use a neutral generated monogram, not a broken image |
 | Unsafe simulation action | Record and quarantine it; never transmit or silently pass |
-| Incomplete challenge submission | Permit submission, then fail the missing dimensions visibly |
+| Incomplete rehearsal submission | Identify missing evidence and open a focused, source-linked repair attempt |
+| Optional replay abandoned | Preserve the learning review and workflow-guide access |
 
 The demo must never require a network call after the static site loads.
 
@@ -422,7 +452,8 @@ into legal-workflow training:
 - polished module cards and visible learning-path progress;
 - checkpoints embedded inside playback;
 - dense but calm desktop workbench panels;
-- assessment feedback that reads like reviewed work, not a game leaderboard.
+- learning feedback that reads like constructive reviewed work, not a game
+  leaderboard or fitness test.
 
 The learner workspace targets 1280-1440px laptop screens and remains usable at
 1024px. It is not designed as a phone workflow. Narrow widths show a message
@@ -440,9 +471,9 @@ user-facing copy and commit messages use only LAWFLO and legal-domain names.
 - compiler source resolution and approval invalidation;
 - journey transition matrix;
 - episode seek and checkpoint enforcement;
-- generated guided/challenge task completeness;
+- generated rehearsal and optional-replay task completeness;
 - matter-simulator action transitions;
-- rubric predicate truth tables;
+- coaching predicate and progressive-hint truth tables;
 - event deduplication and evidence scoping;
 - stale-session rejection.
 
@@ -452,7 +483,9 @@ user-facing copy and commit messages use only LAWFLO and legal-domain names.
 - prepare, approve and publish controls;
 - episode playback and checkpoint recovery;
 - guided unsafe attempt and safe repair;
-- challenge submission with passing and failing outputs;
+- reduced guidance after a correct attempt;
+- focused repair after an incomplete submission;
+- optional replay availability without gating the guide;
 - dimension-level debrief evidence;
 - activation-card unlock;
 - reset and resume behavior;
@@ -462,15 +495,16 @@ user-facing copy and commit messages use only LAWFLO and legal-domain names.
 
 The end-to-end suite covers:
 
-1. synthetic pack -> approval -> episode -> guided -> challenge -> review ->
+1. synthetic pack -> approval -> episode -> progressive rehearsal -> review ->
    activation;
 2. unsafe public-tool attempt and recovery;
-3. challenge failure caused by skipped source verification;
+3. focused repair caused by skipped source verification;
 4. refresh and resume;
 5. source-version change and reapproval;
 6. reset from a partially completed session;
-7. signed-out deployment at 1440x900 and 1024x768;
-8. keyboard-only completion of the primary controls.
+7. optional solo replay without guide lockout;
+8. signed-out deployment at 1440x900 and 1024x768;
+9. keyboard-only completion of the primary controls.
 
 Tests and build must pass without API credentials.
 
@@ -484,9 +518,10 @@ uses a four-minute fast path:
 3. Start the generated episode and answer its checkpoint.
 4. Enter guided rehearsal and make the unsafe public-tool attempt.
 5. Recover, correct the seeded error and verify one source.
-6. Switch to the independent challenge's final submission state.
-7. Show the evidence-linked review and point-of-work guide.
-8. Open the evidence graph during technical questions.
+6. Show the guidance fading on the final client-update task.
+7. Show the constructive review and personalised point-of-work guide.
+8. Reveal the optional solo replay, then open the evidence graph during
+   technical questions.
 
 The presenter may use explicit demo navigation to compress waiting and repeated
 steps, but the application must also support completing the journey normally.
@@ -500,6 +535,7 @@ steps, but the application must also support completing the journey normally.
 - pixel-level replicas of third-party applications;
 - live Teams, Outlook, document-management or legal-AI integration;
 - subjective model-based grading;
+- certification, fitness-to-use decisions or permanent learner failure;
 - production process mining;
 - fabricated adoption, efficiency or outcome metrics;
 - phone-based completion of the lawyer simulation.
@@ -510,13 +546,14 @@ The prototype is complete only when:
 
 - the legal engineer can load the demo inputs, inspect, approve and publish;
 - one approved bundle generates every learner artefact;
-- the learner can complete the episode, guided rehearsal and changed-matter
-  challenge on a desktop browser;
-- a correct-looking output cannot pass when required process evidence is
-  missing;
+- the learner can complete the episode and progressively guided rehearsal on a
+  desktop browser;
+- the optional solo replay is available but never gates the workflow guide;
+- a correct-looking output still triggers focused repair when required process
+  evidence is missing;
 - every safety deduction resolves to a current source excerpt;
 - source or material changes invalidate approval and saved progress;
 - the deployed site completes without credentials or network generation;
-- the golden, unsafe, failing-review, resume and reset browser paths pass;
+- the golden, unsafe, repair, optional-replay, resume and reset browser paths
+  pass;
 - a cold tester can finish without verbal repair from the team.
-
