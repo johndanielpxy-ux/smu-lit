@@ -53,7 +53,7 @@ export function EpisodePlayer({ bundle, narrationUrl, onEvent, onComplete }: Epi
   const matchingCues = timeline.filter((item) => `${item.title} ${item.narration} ${item.caption}`.toLowerCase().includes(query.toLowerCase()));
   const sourceIds = checkpoint?.sourceRefIds ?? cue.sourceRefIds;
 
-  return <section className="episode" aria-label="LAWFLO learning episode">
+  return <section id="main-content" className="episode" aria-label="LAWFLO learning episode">
     <header className="episode__header">
       <div><span className="episode__kicker">LAWFLO INTERACTIVE STORY · S1:E1</span><h1>{bundle.episode.title}</h1><p>With {bundle.useCase.contributorName}, {bundle.useCase.contributorRole}</p><small className="episode__provenance">Interactive story · deterministic fallback · source-linked and human-approved</small>{narrationUrl && !audioUnavailable ? <div className="episode__narration"><span>AI-generated voice · approved narration</span><audio title="Approved AI narration" controls src={narrationUrl} onError={() => setAudioUnavailable(true)} /></div> : null}{audioUnavailable ? <p className="episode__audio-status" role="status">Narration unavailable. Captions remain active.</p> : null}</div>
       <div className="episode__tools">

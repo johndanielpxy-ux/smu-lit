@@ -43,7 +43,7 @@ export function MatterWorkspace({ bundle, mode, onEvent, onComplete }: MatterWor
   const selectRoute = (route: Route) => { dispatch({ type: "SELECT_ROUTE", route }); onEvent("route_selected", { route }); };
   const repairCopy: Partial<Record<NonNullable<typeof state.repairTask>, string>> = { verify_findings: "Verify the material AI findings against the agreement.", compare_clauses: "Open the changed clause and compare both versions.", apply_playbook: "Open the matched playbook rule before relying on it.", choose_route: "Choose the route produced by the verified facts." };
 
-  return <main className="matter">
+  return <main id="main-content" className="matter">
     <div className="matter__mobile" role="note"><strong>Desktop rehearsal</strong><span>Open LAWFLO on a screen at least 900px wide to use the simulated legal workspace.</span></div>
     <header className="matter__top"><div><span className="matter__eyebrow">LAWFLO · {mode === "solo" ? "Solo replay" : "Guided rehearsal"}</span><h1>{scenario.contractName}</h1></div><div className="matter__matter-id">MATTER 26—0417 <span>Local simulation</span></div></header>
     <div className="matter__desktop">

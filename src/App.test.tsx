@@ -21,6 +21,13 @@ function verifyFinding(label: string, clauseLabel: RegExp, value: string) {
 }
 
 describe("LAWFLO application", () => {
+  it("presents the institutional learning safeguards before the studio", () => {
+    render(<App />);
+    expect(screen.getByText(/legal ai learning infrastructure/i)).toBeVisible();
+    expect(screen.getByRole("complementary", { name: /platform safeguards/i })).toHaveTextContent(/approved workflow sources/i);
+    expect(screen.getByRole("contentinfo")).toHaveTextContent(/synthetic training matter/i);
+  });
+
   it("treats a generated episode as a new draft that requires fresh approval", async () => {
     const generated = {
       schemaVersion: "1.0",
