@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { contractTrainingContent } from "./demo/contractScenarios";
 import { demoUseCase } from "./demo/demoUseCase";
 import { approveUseCase, isApprovalCurrent } from "./domain/approval";
@@ -9,6 +9,7 @@ import { assessChangeImpact } from "./features/change-impact/changeImpact";
 import { LearningReview } from "./features/coaching/LearningReview";
 import { deriveLearningReview, type LearningReviewResult } from "./features/coaching/coachingEngine";
 import { compileApprovedTrainingModule, type CompiledLawfloBundle } from "./features/compiler/bundleCompiler";
+import { clearPublishedBundle, loadPublishedBundle, savePublishedBundle } from "./features/compiler/bundleStorage";
 import { prepareDraftFromDemoPack } from "./features/compiler/compiler";
 import { EpisodePlayer } from "./features/episode/EpisodePlayer";
 import { clearEpisode } from "./features/episode/episodeStorage";
@@ -16,7 +17,7 @@ import { getEvents, recordEvent, resetDemo } from "./features/events/eventStore"
 import { EvidenceInspector } from "./features/evidence/EvidenceInspector";
 import { WorkflowGuide } from "./features/guide/WorkflowGuide";
 import { createJourneyState, journeyReducer } from "./features/journey/journeyReducer";
-import { clearJourney } from "./features/journey/journeyStorage";
+import { clearJourney, loadJourney, saveJourney } from "./features/journey/journeyStorage";
 import { MatterWorkspace } from "./features/rehearsal/MatterWorkspace";
 import { createRehearsalState } from "./features/rehearsal/rehearsalReducer";
 import { clearRehearsal, loadRehearsal } from "./features/rehearsal/rehearsalStorage";
@@ -30,18 +31,29 @@ function EventLedger({ events }: { events: MatterShiftEvent[] }) {
 }
 
 export function App() {
-  const [useCase, setUseCase] = useState<UseCase>(() => structuredClone(demoUseCase));
-  const [draftPrepared, setDraftPrepared] = useState(false);
-  const [bundle, setBundle] = useState<CompiledLawfloBundle>();
+  const [restoredBundle] = useState(() => loadPublishedBundle());
+  const [useCase, setUseCase] = useState<UseCase>(() => restoredBundle?.useCase ?? structuredClone(demoUseCase));
+  const [draftPrepared, setDraftPrepared] = useState(Boolean(restoredBundle));
+  const [bundle, setBundle] = useState<CompiledLawfloBundle | undefined>(restoredBundle);
   const [events, setEvents] = useState<MatterShiftEvent[]>([]);
-  const [review, setReview] = useState<LearningReviewResult>();
-  const [status, setStatus] = useState("Load five governed inputs to begin");
+  const [review, setReview] = useState<LearningReviewResult | undefined>(() => {
+    if (!restoredBundle) return undefined;
+    const restored = loadRehearsal({ bundleId: restoredBundle.manifest.bundleId, sourceVersion: restoredBundle.manifest.sourceVersion, contractVersion: restoredBundle.rehearsal.scenario.contractVersion, approvalFingerprint: restoredBundle.manifest.approvalFingerprint });
+    return restored?.task === "complete" ? deriveLearningReview(restored, restoredBundle.coaching) : undefined;
+  });
+  const [status, setStatus] = useState(restoredBundle ? "Published module restored" : "Load five governed inputs to begin");
   const [error, setError] = useState<string>();
   const [governedOpen, setGovernedOpen] = useState(false);
   const [resetKey, setResetKey] = useState(0);
-  const [journey, journeyDispatch] = useReducer(journeyReducer, emptyScope, createJourneyState);
+  const [journey, journeyDispatch] = useReducer(journeyReducer, restoredBundle, (restored) => {
+    if (!restored) return createJourneyState(emptyScope);
+    const scope = { bundleId: restored.manifest.bundleId, sourceVersion: restored.manifest.sourceVersion, contractVersion: restored.rehearsal.scenario.contractVersion, approvalFingerprint: restored.manifest.approvalFingerprint };
+    return loadJourney(scope) ?? journeyReducer(createJourneyState(scope), { type: "BUNDLE_PUBLISHED", scope });
+  });
   const studioHeading = useRef<HTMLHeadingElement>(null);
   const approvalCurrent = isApprovalCurrent(useCase);
+
+  useEffect(() => { if (bundle) saveJourney(journey); }, [bundle, journey]);
 
   const refreshEvents = useCallback((target = useCase) => setEvents(getEvents(target.id, target.sourceVersion)), [useCase]);
   const prePublishReporter = useCallback<MatterShiftEventReporter>((type, metadata, options) => {
@@ -78,17 +90,17 @@ export function App() {
       const metadata = { bundleId: nextBundle.manifest.bundleId, sourceVersion: nextBundle.manifest.sourceVersion, contractVersion: nextBundle.rehearsal.scenario.contractVersion, approvalFingerprint: nextBundle.manifest.approvalFingerprint };
       recordEvent({ useCaseId: useCase.id, type: "use_case_compiled", metadata }, { idempotencyKey: `compile:${nextBundle.manifest.bundleId}` });
       recordEvent({ useCaseId: useCase.id, type: "module_published", metadata }, { idempotencyKey: `publish:${nextBundle.manifest.bundleId}` });
-      setBundle(nextBundle); setEvents(getEvents(useCase.id, useCase.sourceVersion)); setStatus("Module published");
+      savePublishedBundle(nextBundle); setBundle(nextBundle); setEvents(getEvents(useCase.id, useCase.sourceVersion)); setStatus("Module published");
       journeyDispatch({ type: "BUNDLE_PUBLISHED", scope: { bundleId: nextBundle.manifest.bundleId, sourceVersion: nextBundle.manifest.sourceVersion, contractVersion: nextBundle.rehearsal.scenario.contractVersion, approvalFingerprint: nextBundle.manifest.approvalFingerprint } });
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Publication failed safely."); }
   }
   function finishRehearsal() {
     if (!bundle) return;
     const state = loadRehearsal({ bundleId: bundle.manifest.bundleId, sourceVersion: bundle.manifest.sourceVersion, contractVersion: bundle.rehearsal.scenario.contractVersion, approvalFingerprint: bundle.manifest.approvalFingerprint }) ?? createRehearsalState("guided");
-    setReview(deriveLearningReview(state, bundle.coaching)); journeyDispatch({ type: "REHEARSAL_COMPLETED" }); setGovernedOpen(true);
+    setReview(deriveLearningReview(state, bundle.coaching)); journeyDispatch({ type: "REHEARSAL_COMPLETED" });
   }
   function reset() {
-    resetDemo(); clearJourney(); if (bundle) { clearEpisode(bundle.manifest.bundleId); clearRehearsal(bundle.manifest.bundleId); }
+    resetDemo(); clearJourney(); clearPublishedBundle(); if (bundle) { clearEpisode(bundle.manifest.bundleId); clearRehearsal(bundle.manifest.bundleId); }
     setUseCase(structuredClone(demoUseCase)); setDraftPrepared(false); setBundle(undefined); setReview(undefined); setEvents([]); setStatus("Load five governed inputs to begin"); setError(undefined); setGovernedOpen(false); setResetKey((value) => value + 1); journeyDispatch({ type: "RESET" });
     window.setTimeout(() => studioHeading.current?.focus(), 0);
   }

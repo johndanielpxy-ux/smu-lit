@@ -58,4 +58,15 @@ describe("LAWFLO application", () => {
     expect(screen.getByRole("heading", { name: /evidence chain/i })).toBeVisible();
     expect(screen.getByText(/module_published/i)).toBeVisible();
   });
+
+  it("restores a published journey after a browser refresh", async () => {
+    const first = render(<App />);
+    await publish();
+    fireEvent.click(screen.getByRole("button", { name: /watch episode/i }));
+    first.unmount();
+
+    render(<App />);
+    expect(screen.getByRole("heading", { name: /ai-assisted contract review/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: /reset demo/i })).toBeVisible();
+  });
 });
