@@ -1,11 +1,11 @@
-# MatterShift agent rules
+# LAWFLO agent rules
 
 You are contributing to a shared hackathon repository. Read this file, the
 README, and only your assigned file in `docs/agent-handoffs/` before editing.
 
 ## Product north star
 
-MatterShift helps a law firm's legal engineers turn one tested, approved AI
+LAWFLO helps a law firm's legal engineers turn one tested, approved AI
 workflow into a source-verified peer story, a safe rehearsal, and a
 point-of-work action.
 

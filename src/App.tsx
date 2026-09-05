@@ -205,9 +205,9 @@ export function App() {
   return (
     <div className="app-shell">
       <header className="site-header">
-        <a className="brand" href="#top" aria-label="MatterShift home">
-          <span className="brand-mark">M</span>
-          <span>MatterShift</span>
+        <a className="brand" href="#top" aria-label="LAWFLO home">
+          <span className="brand-mark">L</span>
+          <span>LAWFLO</span>
         </a>
         <div className="header-actions">
           <span className="synthetic-label">
@@ -246,7 +246,7 @@ export function App() {
           </div>
         </section>
 
-        <nav className="stage-nav" aria-label="MatterShift stages">
+        <nav className="stage-nav" aria-label="LAWFLO stages">
           {stages.map((stage, index) => (
             <button
               className={activeStage === stage.id ? "active" : ""}

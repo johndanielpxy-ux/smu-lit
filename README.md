@@ -1,8 +1,8 @@
-# MatterShift
+# LAWFLO
 
-MatterShift helps a law firm's legal engineers turn tested and approved AI workflows into cinematic peer stories, safe rehearsals and point-of-work action cards.
+LAWFLO helps a law firm's legal engineers turn tested and approved AI workflows into cinematic peer stories, safe rehearsals and point-of-work action cards.
 
-> MatterShift compiles one approved internal workflow into a source-verified peer story, a safe rehearsal and a point-of-work action.
+> LAWFLO compiles one approved internal workflow into a source-verified peer story, a safe rehearsal and a point-of-work action.
 
 This repository contains a synthetic hackathon demonstration. It is not connected to R&T, Harvey, Microsoft or any client system.
 

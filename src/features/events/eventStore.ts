@@ -3,7 +3,7 @@ import type {
   MatterShiftEventType,
 } from "../../domain/mattershift";
 
-const STORAGE_KEY = "mattershift.observed-events.v1";
+const STORAGE_KEY = "lawflo.observed-events.v1";
 const SCHEMA_VERSION = 1;
 
 const allowedEventTypes: ReadonlySet<MatterShiftEventType> = new Set([
@@ -218,7 +218,7 @@ export function createEventStore(
   return {
     record(event, recordOptions = {}) {
       if (!allowedEventTypes.has(event.type)) {
-        throw new Error(`Unsupported MatterShift event type: ${event.type}`);
+        throw new Error(`Unsupported LAWFLO event type: ${event.type}`);
       }
       if (!event.useCaseId.trim()) {
         throw new Error("A non-empty use case id is required.");
