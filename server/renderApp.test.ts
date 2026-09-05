@@ -24,6 +24,7 @@ function app() {
     voiceoverHandler: async () => new Response(new Uint8Array([1, 2, 3]), {
       headers: { "content-type": "audio/mpeg", "x-lawflo-test": "voiceover" },
     }),
+    videoHandler: async (request) => Response.json({ route: "video", path: new URL(request.url).pathname }),
   });
 }
 
@@ -52,16 +53,22 @@ describe("Render application adapter", () => {
     expect(await (await handle(new Request("https://lawflo.example/%2e%2e/package.json"))).text()).not.toContain('"name": "lawflo"');
   });
 
-  it("forwards only the two generation routes and preserves handler responses", async () => {
+  it("forwards only the supported generation routes and preserves handler responses", async () => {
     const handle = app();
     const moduleResponse = await handle(new Request("https://lawflo.example/api/generation/module", { method: "POST" }));
     const voiceResponse = await handle(new Request("https://lawflo.example/api/generation/voiceover", { method: "POST" }));
+    const videoCreateResponse = await handle(new Request("https://lawflo.example/api/generation/video", { method: "POST" }));
+    const videoStatusResponse = await handle(new Request("https://lawflo.example/api/generation/video/job-123"));
+    const videoMediaResponse = await handle(new Request("https://lawflo.example/api/generation/video/job-123/media"));
     const unknownResponse = await handle(new Request("https://lawflo.example/api/generation/unknown", { method: "POST" }));
 
     expect(moduleResponse.status).toBe(201);
     expect(await moduleResponse.json()).toEqual({ route: "module" });
     expect(voiceResponse.headers.get("x-lawflo-test")).toBe("voiceover");
     expect([...new Uint8Array(await voiceResponse.arrayBuffer())]).toEqual([1, 2, 3]);
+    await expect(videoCreateResponse.json()).resolves.toEqual({ route: "video", path: "/api/generation/video" });
+    await expect(videoStatusResponse.json()).resolves.toEqual({ route: "video", path: "/api/generation/video/job-123" });
+    await expect(videoMediaResponse.json()).resolves.toEqual({ route: "video", path: "/api/generation/video/job-123/media" });
     expect(unknownResponse.status).toBe(404);
     expect(await unknownResponse.json()).toEqual({ error: { code: "NOT_FOUND", message: "API route not found." } });
   });
@@ -71,6 +78,7 @@ describe("Render application adapter", () => {
       distDir: join(distDir, "missing"),
       moduleHandler: async () => new Response(),
       voiceoverHandler: async () => new Response(),
+      videoHandler: async () => new Response(),
     });
 
     const response = await handle(new Request("https://lawflo.example/"));

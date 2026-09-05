@@ -7,6 +7,7 @@ interface RenderAppOptions {
   distDir: string;
   moduleHandler: ApiHandler;
   voiceoverHandler: ApiHandler;
+  videoHandler: ApiHandler;
 }
 
 const contentTypes: Record<string, string> = {
@@ -71,6 +72,9 @@ export function createRenderApp(options: RenderAppOptions): ApiHandler {
     const { pathname } = new URL(request.url);
     if (pathname === "/api/generation/module") return options.moduleHandler(request);
     if (pathname === "/api/generation/voiceover") return options.voiceoverHandler(request);
+    if (pathname === "/api/generation/video" || pathname.startsWith("/api/generation/video/")) {
+      return options.videoHandler(request);
+    }
     if (pathname.startsWith("/api/")) return notFound();
     if (request.method !== "GET" && request.method !== "HEAD") {
       return new Response("Method not allowed.", { status: 405, headers: { allow: "GET, HEAD" } });
