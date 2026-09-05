@@ -2,7 +2,7 @@
 
 ## Release target
 
-- Public URL: record after the Render service reports **Live**: `________________`
+- Public URL: `https://lawflo.onrender.com/`
 - Deployment source: `main` via the Render Blueprint in `render.yaml`
 - Region and runtime: Singapore, Node 22+
 - Access model: the learner journey is public; production generation endpoints
@@ -21,7 +21,7 @@
 - [x] Canonical route repeated three times without failure
 - [x] Generate and visually approve both durable Runway MP4s
 - [ ] Confirm all three Render secrets are set
-- [ ] Record the release commit: `________________`
+- [x] Video release commit: `a979c96`
 
 ## Browser evidence
 
@@ -31,7 +31,7 @@
 - [x] Unsafe low-value routing produces constructive correction
 - [x] There are zero uncaught page errors on the canonical route
 - [x] Prepared Runway MP4s play through both segments in local release Chrome
-- [ ] Prepared Runway MP4s play through both segments on Render
+- [x] Prepared Runway MP4s play through both segments on Render
 - [ ] Browser refresh resumes the published episode and Reset clears all progress
 
 ## Signed-out check
