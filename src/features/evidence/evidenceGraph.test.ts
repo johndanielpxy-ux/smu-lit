@@ -171,4 +171,26 @@ describe("evidenceGraph", () => {
       ),
     ).toBe(false);
   });
+
+  it("proves the clause-to-correction-to-rule-to-route coaching chain", () => {
+    const graph = buildEvidenceGraph(bundle, [{
+      id: "event-9", useCaseId: approved.id, type: "ai_finding_resolved",
+      occurredAt: "2026-09-05T04:07:00.000Z",
+      metadata: { sourceVersion: approved.sourceVersion, approvalFingerprint: approved.approvalRecord!.contentFingerprint, bundleId: bundle.manifest.bundleId, contractVersion: bundle.rehearsal.scenario.contractVersion, findingId: "guided-material-redline", resolution: "corrected" },
+    }]);
+    expect(graph.nodes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "clause:liability", type: "contract_clause" }),
+      expect.objectContaining({ id: "finding:guided-material-redline", type: "ai_finding" }),
+      expect.objectContaining({ id: "rule:material-redline-review", type: "playbook_rule" }),
+      expect.objectContaining({ id: "route:legal_review", type: "route_decision" }),
+      expect.objectContaining({ id: "coaching:risk_reasoning", type: "coaching_dimension" }),
+    ]));
+    expect(graph.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ from: "clause:liability", to: "finding:guided-material-redline", relation: "produced" }),
+      expect.objectContaining({ from: "finding:guided-material-redline", to: "event:event-9", relation: "corrected_by" }),
+      expect.objectContaining({ from: "event:event-9", to: "rule:material-redline-review", relation: "governed_by" }),
+      expect.objectContaining({ from: "rule:material-redline-review", to: "route:legal_review", relation: "routed_by" }),
+      expect.objectContaining({ from: "route:legal_review", to: "coaching:risk_reasoning", relation: "produced" }),
+    ]));
+  });
 });

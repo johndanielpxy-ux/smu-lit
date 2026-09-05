@@ -14,6 +14,7 @@ export type EpisodeAction =
   | { type: "TICK" }
   | { type: "SEEK"; cueIndex: number }
   | { type: "ANSWER"; choiceId: string }
+  | { type: "FINISH" }
   | { type: "REPLAY" }
   | { type: "RESET" };
 
@@ -69,6 +70,11 @@ export function episodeReducer(state: EpisodeState, action: EpisodeAction, cues:
     }
     case "REPLAY":
       return { ...createInitialEpisodeState(), status: "playing" };
+    case "FINISH": {
+      const checkpoints = cues.flatMap((cue) => cue.checkpoint ? [cue.checkpoint.id] : []);
+      if (!checkpoints.every((id) => state.answeredCheckpointIds.includes(id))) return state;
+      return { ...state, status: "complete", cueIndex: cues.length - 1, elapsedSeconds: cues.reduce((sum, cue) => sum + cue.durationSeconds, 0) };
+    }
     case "RESET":
       return createInitialEpisodeState();
   }

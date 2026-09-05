@@ -1,353 +1,118 @@
-import { useState } from "react";
+import { useCallback, useMemo, useReducer, useRef, useState } from "react";
 import { contractTrainingContent } from "./demo/contractScenarios";
 import { demoUseCase } from "./demo/demoUseCase";
 import { approveUseCase, isApprovalCurrent } from "./domain/approval";
+import { createScopedEventReporter, type MatterShiftEventReporter } from "./domain/integration";
 import type { MatterShiftEvent, UseCase } from "./domain/mattershift";
+import { ChangeImpactPanel } from "./features/change-impact/ChangeImpactPanel";
+import { assessChangeImpact } from "./features/change-impact/changeImpact";
+import { LearningReview } from "./features/coaching/LearningReview";
+import { deriveLearningReview, type LearningReviewResult } from "./features/coaching/coachingEngine";
+import { compileApprovedTrainingModule, type CompiledLawfloBundle } from "./features/compiler/bundleCompiler";
 import { prepareDraftFromDemoPack } from "./features/compiler/compiler";
-import {
-  compileApprovedTrainingModule,
-  type CompiledLawfloBundle,
-} from "./features/compiler/bundleCompiler";
-import {
-  getEvents,
-  recordEvent,
-  resetDemo,
-} from "./features/events/eventStore";
+import { EpisodePlayer } from "./features/episode/EpisodePlayer";
+import { clearEpisode } from "./features/episode/episodeStorage";
+import { getEvents, recordEvent, resetDemo } from "./features/events/eventStore";
 import { EvidenceInspector } from "./features/evidence/EvidenceInspector";
-import { loadSyntheticDemoPack } from "./features/studio/demoPack";
+import { WorkflowGuide } from "./features/guide/WorkflowGuide";
+import { createJourneyState, journeyReducer } from "./features/journey/journeyReducer";
+import { clearJourney } from "./features/journey/journeyStorage";
+import { MatterWorkspace } from "./features/rehearsal/MatterWorkspace";
+import { createRehearsalState } from "./features/rehearsal/rehearsalReducer";
+import { clearRehearsal, loadRehearsal } from "./features/rehearsal/rehearsalStorage";
+import { DemoPackInput } from "./features/studio/DemoPackInput";
+import type { DemoPack } from "./features/studio/demoPack";
 
-type Stage = "studio" | "episode" | "rehearsal" | "activation";
-
-const stages: Array<{ id: Stage; label: string; owner: string }> = [
-  { id: "studio", label: "Studio", owner: "Ananya" },
-  { id: "episode", label: "Episode", owner: "Su-Ann" },
-  { id: "rehearsal", label: "Rehearsal", owner: "Krishiv" },
-  { id: "activation", label: "Activation", owner: "Krishiv" },
-];
-
-function StagePlaceholder({ stage }: { stage: Exclude<Stage, "studio"> }) {
-  const copy = {
-    episode: {
-      eyebrow: "Cinematic learning",
-      title: "A legal engineer makes the new workflow believable.",
-      description:
-        "This mounting point accepts the approved UseCase, records episode events and hands the learner into rehearsal.",
-    },
-    rehearsal: {
-      eyebrow: "Safe practice",
-      title: "Make the risky choice here, not on a client matter.",
-      description:
-        "This mounting point receives workflow steps and guardrails from the same source-linked object.",
-    },
-    activation: {
-      eyebrow: "Point of work",
-      title: "What to do, why now and how to begin safely.",
-      description:
-        "This mounting point delivers the approved action card without pretending that a real enterprise integration exists.",
-    },
-  }[stage];
-
-  return (
-    <section className="feature-placeholder" aria-labelledby={`${stage}-title`}>
-      <p className="eyebrow">{copy.eyebrow}</p>
-      <h2 id={`${stage}-title`}>{copy.title}</h2>
-      <p>{copy.description}</p>
-      <div className="mount-contract">
-        <span>Integration contract ready</span>
-        <code>{`<${stage[0].toUpperCase()}${stage.slice(1)} useCase onEvent />`}</code>
-      </div>
-    </section>
-  );
-}
+const emptyScope = { bundleId: "unpublished", sourceVersion: "draft", contractVersion: "draft", approvalFingerprint: "draft" };
 
 function EventLedger({ events }: { events: MatterShiftEvent[] }) {
-  return (
-    <aside className="ledger" aria-labelledby="ledger-title">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Evidence, not theatre</p>
-          <h2 id="ledger-title">Observed event ledger</h2>
-        </div>
-        <span className="count">{events.length}</span>
-      </div>
-
-      {events.length === 0 ? (
-        <p className="empty-state">No prototype actions recorded yet.</p>
-      ) : (
-        <ol className="event-list">
-          {events.map((event) => (
-            <li key={event.id}>
-              <span className="event-dot" aria-hidden="true" />
-              <div>
-                <strong>{event.type}</strong>
-                <time dateTime={event.occurredAt}>
-                  {new Date(event.occurredAt).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  })}
-                </time>
-              </div>
-            </li>
-          ))}
-        </ol>
-      )}
-
-      <div className="future-metrics" aria-label="Future production metrics">
-        <p>Requires governed integration</p>
-        <span>First safe use</span>
-        <span>Repeat use · 14d</span>
-        <span>Outcome reported</span>
-      </div>
-    </aside>
-  );
+  return <aside className="platform-ledger"><div><span>Observed actions</span><strong>{events.length}</strong></div>{events.length ? <ol>{events.map((event) => <li key={event.id}><b>{event.type}</b><small>{event.metadata?.sourceVersion ? `v${event.metadata.sourceVersion}` : "draft"}</small></li>)}</ol> : <p>No actions recorded yet.</p>}</aside>;
 }
 
 export function App() {
-  const [activeStage, setActiveStage] = useState<Stage>("studio");
-  const [useCase, setUseCase] = useState<UseCase>(() =>
-    structuredClone(demoUseCase),
-  );
+  const [useCase, setUseCase] = useState<UseCase>(() => structuredClone(demoUseCase));
   const [draftPrepared, setDraftPrepared] = useState(false);
-  const [bundle, setBundle] = useState<CompiledLawfloBundle | null>(null);
+  const [bundle, setBundle] = useState<CompiledLawfloBundle>();
   const [events, setEvents] = useState<MatterShiftEvent[]>([]);
-  const [status, setStatus] = useState("Ready to prepare governed draft");
+  const [review, setReview] = useState<LearningReviewResult>();
+  const [status, setStatus] = useState("Load five governed inputs to begin");
+  const [error, setError] = useState<string>();
+  const [governedOpen, setGovernedOpen] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
+  const [journey, journeyDispatch] = useReducer(journeyReducer, emptyScope, createJourneyState);
+  const studioHeading = useRef<HTMLHeadingElement>(null);
   const approvalCurrent = isApprovalCurrent(useCase);
 
-  async function handlePrepare() {
-    setStatus("Validating source-linked workflow…");
-    const compiled = await prepareDraftFromDemoPack(loadSyntheticDemoPack());
-    setUseCase(compiled);
-    setDraftPrepared(true);
-    setBundle(null);
-    setEvents(getEvents(compiled.id, compiled.sourceVersion));
-    setStatus("Draft ready for approval");
-  }
+  const refreshEvents = useCallback((target = useCase) => setEvents(getEvents(target.id, target.sourceVersion)), [useCase]);
+  const prePublishReporter = useCallback<MatterShiftEventReporter>((type, metadata, options) => {
+    try {
+      recordEvent({ useCaseId: useCase.id, type, metadata: { ...metadata, sourceVersion: useCase.sourceVersion } }, options);
+      refreshEvents();
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "The event ledger could not record this action."); }
+  }, [refreshEvents, useCase.id, useCase.sourceVersion]);
+  const scopedReporter = useMemo<MatterShiftEventReporter | undefined>(() => {
+    if (!bundle) return undefined;
+    const reporter = createScopedEventReporter({ useCaseId: bundle.manifest.useCaseId, sourceVersion: bundle.manifest.sourceVersion, contractVersion: bundle.rehearsal.scenario.contractVersion, approvalFingerprint: bundle.manifest.approvalFingerprint, bundleId: bundle.manifest.bundleId }, (event, options) => recordEvent(event, options));
+    return (type, metadata, options) => {
+      try { reporter(type, metadata, options); setEvents(getEvents(bundle.manifest.useCaseId, bundle.manifest.sourceVersion)); }
+      catch (caught) { setError(caught instanceof Error ? caught.message : "The evidence ledger needs attention."); }
+    };
+  }, [bundle]);
 
+  async function handlePack(pack: DemoPack) {
+    try { setError(undefined); setStatus("Checking the approved workflow markers…"); const draft = await prepareDraftFromDemoPack(pack); setUseCase(draft); setDraftPrepared(true); setStatus("Draft ready for named approval"); }
+    catch (caught) { setError(caught instanceof Error ? caught.message : "The demo pack could not be prepared."); }
+  }
   function handleApprove() {
-    const approved = approveUseCase(
-      useCase,
-      "Jordan Lee (synthetic reviewer)",
-    );
-    setUseCase(approved);
-    recordEvent(
-      {
-        useCaseId: approved.id,
-        type: "human_approved",
-        metadata: {
-          approvalFingerprint: approved.approvalRecord!.contentFingerprint,
-          sourceVersion: approved.sourceVersion,
-        },
-      },
-      {
-        idempotencyKey: `approval:${approved.id}:${approved.approvalRecord!.contentFingerprint}`,
-      },
-    );
-    setEvents(getEvents(approved.id, approved.sourceVersion));
-    setStatus("Exact content and source version approved");
+    try {
+      const approved = approveUseCase(useCase, "Jordan Lee (synthetic reviewer)");
+      setUseCase(approved);
+      recordEvent({ useCaseId: approved.id, type: "human_approved", metadata: { sourceVersion: approved.sourceVersion, approvalFingerprint: approved.approvalRecord!.contentFingerprint } }, { idempotencyKey: `approval:${approved.approvalRecord!.contentFingerprint}` });
+      setEvents(getEvents(approved.id, approved.sourceVersion)); setStatus("Exact workflow, scenarios and sources approved");
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Approval could not be recorded."); }
+  }
+  function handlePublish() {
+    try {
+      setError(undefined);
+      const nextBundle = compileApprovedTrainingModule(useCase, contractTrainingContent);
+      const metadata = { bundleId: nextBundle.manifest.bundleId, sourceVersion: nextBundle.manifest.sourceVersion, contractVersion: nextBundle.rehearsal.scenario.contractVersion, approvalFingerprint: nextBundle.manifest.approvalFingerprint };
+      recordEvent({ useCaseId: useCase.id, type: "use_case_compiled", metadata }, { idempotencyKey: `compile:${nextBundle.manifest.bundleId}` });
+      recordEvent({ useCaseId: useCase.id, type: "module_published", metadata }, { idempotencyKey: `publish:${nextBundle.manifest.bundleId}` });
+      setBundle(nextBundle); setEvents(getEvents(useCase.id, useCase.sourceVersion)); setStatus("Module published");
+      journeyDispatch({ type: "BUNDLE_PUBLISHED", scope: { bundleId: nextBundle.manifest.bundleId, sourceVersion: nextBundle.manifest.sourceVersion, contractVersion: nextBundle.rehearsal.scenario.contractVersion, approvalFingerprint: nextBundle.manifest.approvalFingerprint } });
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Publication failed safely."); }
+  }
+  function finishRehearsal() {
+    if (!bundle) return;
+    const state = loadRehearsal({ bundleId: bundle.manifest.bundleId, sourceVersion: bundle.manifest.sourceVersion, contractVersion: bundle.rehearsal.scenario.contractVersion, approvalFingerprint: bundle.manifest.approvalFingerprint }) ?? createRehearsalState("guided");
+    setReview(deriveLearningReview(state, bundle.coaching)); journeyDispatch({ type: "REHEARSAL_COMPLETED" }); setGovernedOpen(true);
+  }
+  function reset() {
+    resetDemo(); clearJourney(); if (bundle) { clearEpisode(bundle.manifest.bundleId); clearRehearsal(bundle.manifest.bundleId); }
+    setUseCase(structuredClone(demoUseCase)); setDraftPrepared(false); setBundle(undefined); setReview(undefined); setEvents([]); setStatus("Load five governed inputs to begin"); setError(undefined); setGovernedOpen(false); setResetKey((value) => value + 1); journeyDispatch({ type: "RESET" });
+    window.setTimeout(() => studioHeading.current?.focus(), 0);
   }
 
-  function handleGenerate() {
-    const compiledBundle = compileApprovedTrainingModule(
-      useCase,
-      contractTrainingContent,
-    );
-    setBundle(compiledBundle);
-    recordEvent(
-      {
-        useCaseId: useCase.id,
-        type: "use_case_compiled",
-        metadata: {
-          bundleId: compiledBundle.manifest.bundleId,
-          sourceVersion: compiledBundle.manifest.sourceVersion,
-          approvalFingerprint: compiledBundle.manifest.approvalFingerprint,
-        },
-      },
-      { idempotencyKey: `compile:${compiledBundle.manifest.bundleId}` },
-    );
-    setEvents(getEvents(useCase.id, useCase.sourceVersion));
-    setStatus("Learning bundle generated");
-  }
+  const changedImpact = useMemo(() => {
+    if (!bundle) return undefined;
+    const changed = structuredClone(bundle.useCase); changed.sourceVersion = "2026.3"; changed.playbookRules[0].priority += 1;
+    return assessChangeImpact(bundle.useCase, changed, bundle);
+  }, [bundle]);
 
-  function handleSourceOpen(sourceRefId: string) {
-    recordEvent({
-      useCaseId: useCase.id,
-      type: "source_opened",
-      metadata: {
-        sourceRefId,
-        sourceVersion: useCase.sourceVersion,
-        approvalFingerprint: useCase.approvalRecord!.contentFingerprint,
-      },
-    });
-    setEvents(getEvents(useCase.id, useCase.sourceVersion));
-  }
+  const stage = bundle ? journey.stage : "studio";
+  return <div className="platform-shell">
+    <header className="platform-header"><button className="platform-brand" type="button" onClick={() => bundle ? journeyDispatch({ type: "GO_TO", stage: "catalogue" }) : studioHeading.current?.focus()}><span>LF</span>LAWFLO</button><nav aria-label="Learning journey">{bundle && ["Episode", "Rehearsal", "Review", "Guide"].map((label) => <button key={label} type="button" onClick={() => journeyDispatch({ type: "GO_TO", stage: label.toLowerCase() as "episode" | "rehearsal" | "review" | "guide" })}>{label}</button>)}</nav><div><button type="button" onClick={() => setGovernedOpen((value) => !value)} disabled={!bundle}>How this is governed</button><button type="button" onClick={reset}>Reset demo</button></div></header>
+    {error && <div className="platform-error" role="alert"><strong>LAWFLO paused safely.</strong><span>{error}</span><button type="button" onClick={() => setError(undefined)}>Dismiss</button></div>}
 
-  function handleReset() {
-    resetDemo();
-    setUseCase(structuredClone(demoUseCase));
-    setDraftPrepared(false);
-    setBundle(null);
-    setEvents([]);
-    setActiveStage("studio");
-    setStatus("Ready to prepare governed draft");
-  }
+    {stage === "studio" && <main className="platform-main"><section className="platform-hero"><span>Learn the workflow. Rehearse the judgment.</span><h1 ref={studioHeading} tabIndex={-1}>Turn legal AI pioneers into everyday practice.</h1><p>LAWFLO turns an approved legal-engineering workflow into a peer-led episode, a realistic contract matter and a source-linked desk guide.</p><div className="platform-pill-row"><span>Legal AI verification</span><span>Contract review</span><span>Human-controlled routing</span></div></section><DemoPackInput key={resetKey} onReady={(pack) => void handlePack(pack)} onEvent={prePublishReporter} /><section className="publication"><div><span>Publication boundary</span><h2>{useCase.title}</h2><p>{status}</p></div><div><button type="button" onClick={handleApprove} disabled={!draftPrepared || approvalCurrent}>Approve exact version</button><button type="button" onClick={handlePublish} disabled={!approvalCurrent}>Publish learning module</button></div></section>{bundle && changedImpact && <ChangeImpactPanel result={changedImpact} />}</main>}
 
-  return (
-    <div className="app-shell">
-      <header className="site-header">
-        <a className="brand" href="#top" aria-label="LAWFLO home">
-          <span className="brand-mark">L</span>
-          <span>LAWFLO</span>
-        </a>
-        <div className="header-actions">
-          <span className="synthetic-label">
-            <span className="synthetic-full">Synthetic demonstration</span>
-            <span className="synthetic-short">Synthetic demo</span>
-          </span>
-          <button className="text-button" type="button" onClick={handleReset}>
-            Reset demo
-          </button>
-        </div>
-      </header>
+    {stage === "catalogue" && bundle && <main className="catalogue"><section><span>Ready to learn the workflow</span><h1>One episode.<br/>One matter.<br/>One safer habit.</h1><p>Watch Maya catch the AI’s missed liability redline, then work the same legal AI workflow yourself.</p><button type="button" onClick={() => journeyDispatch({ type: "GO_TO", stage: "episode" })}>Watch episode</button></section><article><span>LAWFLO ORIGINAL · S1:E1</span><h2>{bundle.episode.title}</h2><p>100 sec · Interactive · Source-linked</p><strong>Featuring Maya Tan</strong></article></main>}
+    {stage === "episode" && bundle && scopedReporter && <EpisodePlayer bundle={bundle} onEvent={scopedReporter} onComplete={() => journeyDispatch({ type: "EPISODE_COMPLETED" })} />}
+    {stage === "rehearsal" && bundle && scopedReporter && <MatterWorkspace bundle={bundle} mode="guided" onEvent={scopedReporter} onComplete={finishRehearsal} />}
+    {stage === "review" && review && scopedReporter && <LearningReview result={review} onRepair={() => journeyDispatch({ type: "GO_TO", stage: "rehearsal" })} onOpenGuide={() => { journeyDispatch({ type: "REVIEW_OPENED" }); journeyDispatch({ type: "OPEN_GUIDE" }); }} onOpenSource={(sourceRefId) => scopedReporter("source_opened", { sourceRefId })} />}
+    {stage === "guide" && bundle && review && scopedReporter && <WorkflowGuide bundle={bundle} review={review} onEvent={scopedReporter} onStartSoloReplay={() => journeyDispatch({ type: "START_SOLO_REPLAY" })} />}
+    {stage === "solo_replay" && bundle && scopedReporter && <MatterWorkspace bundle={bundle} mode="solo" onEvent={scopedReporter} onComplete={() => journeyDispatch({ type: "REHEARSAL_COMPLETED" })} />}
 
-      <main id="top">
-        <section className="hero">
-          <div className="hero-copy">
-            <p className="eyebrow">The legal-engineer multiplier</p>
-            <h1>Turn pioneers into practice.</h1>
-            <p className="hero-description">
-              Compile one approved internal workflow into a source-verified peer
-              story, a safe rehearsal and a point-of-work action.
-            </p>
-          </div>
-
-          <div className="hero-card">
-            <div className="person-avatar" aria-hidden="true">
-              MT
-            </div>
-            <div>
-              <span>Workflow contributed by</span>
-              <strong>{useCase.contributorName}</strong>
-              <p>{useCase.contributorRole}</p>
-            </div>
-            <span className={`status-pill status-${useCase.approvalStatus}`}>
-              {useCase.approvalStatus.replace("_", " ")}
-            </span>
-          </div>
-        </section>
-
-        <nav className="stage-nav" aria-label="LAWFLO stages">
-          {stages.map((stage, index) => (
-            <button
-              className={activeStage === stage.id ? "active" : ""}
-              key={stage.id}
-              type="button"
-              onClick={() => setActiveStage(stage.id)}
-              aria-pressed={activeStage === stage.id}
-            >
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <strong>{stage.label}</strong>
-              <small>{stage.owner}</small>
-            </button>
-          ))}
-        </nav>
-
-        <div className="workspace-grid">
-          <div className="workspace">
-            {activeStage === "studio" ? (
-              <section className="studio" aria-labelledby="studio-title">
-                <div className="section-heading">
-                  <div>
-                    <p className="eyebrow">Use-Case Compiler</p>
-                    <h2 id="studio-title">{useCase.title}</h2>
-                  </div>
-                  <div className="compiler-actions">
-                    <button
-                      className="secondary-button"
-                      type="button"
-                      onClick={handlePrepare}
-                    >
-                      Prepare draft
-                    </button>
-                    <button
-                      className="secondary-button"
-                      type="button"
-                      onClick={handleApprove}
-                      disabled={!draftPrepared || approvalCurrent}
-                    >
-                      Approve exact version
-                    </button>
-                    <button
-                      className="primary-button"
-                      type="button"
-                      onClick={handleGenerate}
-                      disabled={!approvalCurrent}
-                    >
-                      Generate learning bundle
-                    </button>
-                  </div>
-                </div>
-
-                <div className="status-line" role="status">
-                  <span aria-hidden="true" />
-                  {status}
-                </div>
-
-                <dl className="use-case-meta">
-                  <div>
-                    <dt>Work trigger</dt>
-                    <dd>{useCase.workTrigger}</dd>
-                  </div>
-                  <div>
-                    <dt>Target role</dt>
-                    <dd>{useCase.targetRole}</dd>
-                  </div>
-                  <div>
-                    <dt>Practice</dt>
-                    <dd>{useCase.practiceGroup}</dd>
-                  </div>
-                  <div>
-                    <dt>Policy version</dt>
-                    <dd>v{useCase.sourceVersion}</dd>
-                  </div>
-                </dl>
-
-                <div className="workflow-list">
-                  {useCase.steps.map((step, index) => (
-                    <article key={step.id}>
-                      <span className="step-number">{index + 1}</span>
-                      <div>
-                        <div className="step-heading">
-                          <h3>{step.title}</h3>
-                          <span>{step.tool}</span>
-                        </div>
-                        <p>{step.instruction}</p>
-                        <div className="step-tags">
-                          <span>{step.riskLevel} risk</span>
-                          <span>{step.sourceRefIds.length} source links</span>
-                          {step.humanReviewRequired && <span>human review</span>}
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-
-                {bundle && (
-                  <EvidenceInspector
-                    bundle={bundle}
-                    events={events}
-                    onSourceOpen={handleSourceOpen}
-                  />
-                )}
-              </section>
-            ) : (
-              <StagePlaceholder stage={activeStage} />
-            )}
-          </div>
-
-          <EventLedger events={events} />
-        </div>
-      </main>
-    </div>
-  );
+    {governedOpen && bundle && <section className="governance" aria-label="How this is governed"><button type="button" onClick={() => setGovernedOpen(false)}>Close governance</button><EventLedger events={events} /><EvidenceInspector bundle={bundle} events={events} onSourceOpen={(sourceRefId) => scopedReporter?.("source_opened", { sourceRefId })} />{changedImpact && <ChangeImpactPanel result={changedImpact} />}</section>}
+  </div>;
 }

@@ -40,4 +40,10 @@ describe("episodeReducer", () => {
     state = episodeReducer(state, { type: "REPLAY" }, cues);
     expect(state).toMatchObject({ status: "playing", cueIndex: 0, elapsedSeconds: 0, answeredCheckpointIds: [] });
   });
+
+  it("allows a deliberate finish only after every checkpoint is answered", () => {
+    expect(episodeReducer(createInitialEpisodeState(), { type: "FINISH" }, cues).status).toBe("idle");
+    const ready: EpisodeState = { ...createInitialEpisodeState(), status: "paused", answeredCheckpointIds: ["gate-check"] };
+    expect(episodeReducer(ready, { type: "FINISH" }, cues).status).toBe("complete");
+  });
 });

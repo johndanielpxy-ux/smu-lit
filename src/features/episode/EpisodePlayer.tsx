@@ -77,6 +77,7 @@ export function EpisodePlayer({ bundle, onEvent, onComplete }: EpisodePlayerProp
     <div className="episode__controls">
       {state.status === "playing" ? <button type="button" onClick={() => dispatch({ type: "PAUSE" })}>Pause episode</button> : state.status === "complete" ? <button type="button" onClick={() => dispatch({ type: "REPLAY" })}>Replay episode</button> : <button type="button" onClick={play} disabled={state.status === "checkpoint"}>Play episode</button>}
       <span>{state.elapsedSeconds}s / {timeline.reduce((sum, item) => sum + item.durationSeconds, 0)}s</span>
+      {state.answeredCheckpointIds.length > 0 && state.status !== "complete" && <button type="button" onClick={() => dispatch({ type: "FINISH" })}>Continue to rehearsal</button>}
     </div>
 
     {drawer !== "none" && <aside className="episode__drawer" aria-label={drawer === "sources" ? "Episode sources" : "Episode transcript"}>

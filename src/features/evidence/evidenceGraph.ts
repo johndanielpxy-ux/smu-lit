@@ -7,14 +7,25 @@ export type EvidenceNodeType =
   | "guardrail"
   | "artifact"
   | "approval"
-  | "event";
+  | "event"
+  | "ai_operation"
+  | "ai_finding"
+  | "contract_clause"
+  | "playbook_rule"
+  | "coaching_dimension"
+  | "route_decision";
 
 export type EvidenceRelation =
   | "supports"
   | "constrains"
   | "compiled_into"
   | "authorizes"
-  | "observed_in";
+  | "observed_in"
+  | "produced"
+  | "verified_against"
+  | "governed_by"
+  | "corrected_by"
+  | "routed_by";
 
 export interface EvidenceNode {
   id: string;
@@ -105,6 +116,43 @@ export function buildEvidenceGraph(
       detail: source.excerpt,
       metadata: { version: source.version },
     });
+  }
+
+  for (const operation of bundle.useCase.aiOperations) {
+    const operationId = `ai-operation:${operation.id}`;
+    nodes.push({ id: operationId, type: "ai_operation", label: operation.description, detail: operation.verificationInstruction, metadata: { task: operation.task, tool: operation.tool } });
+    operation.sourceRefIds.forEach((sourceId) => edges.push(edge(`source:${sourceId}`, operationId, "supports")));
+  }
+
+  for (const clause of bundle.rehearsal.scenario.clauses) {
+    const clauseId = `clause:${clause.id}`;
+    nodes.push({ id: clauseId, type: "contract_clause", label: clause.heading, detail: clause.submittedText, metadata: { materiallyChanged: clause.materiallyChanged } });
+    clause.sourceRefIds.forEach((sourceId) => edges.push(edge(`source:${sourceId}`, clauseId, "supports")));
+  }
+
+  for (const finding of bundle.aiAnalysis.findings) {
+    const findingId = `finding:${finding.id}`;
+    nodes.push({ id: findingId, type: "ai_finding", label: finding.label, detail: `AI proposed ${String(finding.proposedValue)}; verified value ${String(finding.verifiedValue)}.`, metadata: { material: finding.material, aiGenerated: true } });
+    edges.push(edge(`clause:${finding.sourceClauseId}`, findingId, "produced"));
+    edges.push(edge(findingId, `clause:${finding.sourceClauseId}`, "verified_against"));
+    edges.push(edge(`ai-operation:compare-contract-clauses`, findingId, "produced"));
+  }
+
+  for (const rule of bundle.useCase.playbookRules) {
+    const ruleId = `rule:${rule.id}`;
+    nodes.push({ id: ruleId, type: "playbook_rule", label: rule.label, detail: rule.explanation, metadata: { route: rule.route, priority: rule.priority } });
+    rule.sourceRefIds.forEach((sourceId) => edges.push(edge(`source:${sourceId}`, ruleId, "supports")));
+  }
+
+  const routeId = `route:${bundle.rehearsal.scenario.expectedRoute}`;
+  nodes.push({ id: routeId, type: "route_decision", label: "Legal-review route", detail: "Verified material change requires legal review.", metadata: { route: bundle.rehearsal.scenario.expectedRoute } });
+  for (const rule of bundle.useCase.playbookRules.filter((item) => item.route === bundle.rehearsal.scenario.expectedRoute)) edges.push(edge(`rule:${rule.id}`, routeId, "routed_by"));
+
+  for (const dimension of Object.keys(bundle.coaching.sourceRefIdsByDimension) as Array<keyof typeof bundle.coaching.sourceRefIdsByDimension>) {
+    const dimensionId = `coaching:${dimension}`;
+    nodes.push({ id: dimensionId, type: "coaching_dimension", label: dimension.replaceAll("_", " "), detail: "Constructive review derived from observed learner actions." });
+    bundle.coaching.sourceRefIdsByDimension[dimension].forEach((sourceId) => edges.push(edge(`source:${sourceId}`, dimensionId, "supports")));
+    edges.push(edge(routeId, dimensionId, "produced"));
   }
 
   for (const step of bundle.useCase.steps) {
@@ -206,6 +254,10 @@ export function buildEvidenceGraph(
       detail: event.occurredAt,
       metadata: event.metadata ? { ...event.metadata } : undefined,
     });
+    if (event.type === "ai_finding_resolved" && event.metadata?.resolution === "corrected" && typeof event.metadata.findingId === "string") {
+      edges.push(edge(`finding:${event.metadata.findingId}`, eventId, "corrected_by"));
+      edges.push(edge(eventId, "rule:material-redline-review", "governed_by"));
+    }
     for (const surfaceId of eventSurfaceIds(bundle, event)) {
       if (nodes.some((node) => node.id === surfaceId)) {
         edges.push(edge(surfaceId, eventId, "observed_in"));

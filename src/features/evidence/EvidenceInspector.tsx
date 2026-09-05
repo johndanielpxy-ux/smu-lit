@@ -137,7 +137,8 @@ export function EvidenceInspector({
             <span className="chain-label">Derived surfaces</span>
             <ul className="artifact-stack">
               <li><strong>Peer episode</strong><span>Beat preserves this step and its sources</span></li>
-              <li><strong>Activation card</strong><span>Same instruction at the point of work</span></li>
+              <li><strong>Matter rehearsal</strong><span>Observed action is checked against the same rule</span></li>
+              <li><strong>Workflow guide</strong><span>Same instruction remains available at the desk</span></li>
             </ul>
           </article>
         </div>
