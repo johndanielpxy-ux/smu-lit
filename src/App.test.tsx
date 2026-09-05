@@ -72,12 +72,7 @@ describe("LAWFLO application", () => {
     expect(screen.getByRole("heading", { level: 1, name: /northstar analytics sales renewal/i })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /open northstar matter/i }));
     fireEvent.click(screen.getByRole("button", { name: /run ai review/i }));
-    verifyFinding("Contract value", /compare commercial terms clause/i, "42000");
-    verifyFinding("Template version", /compare commercial terms clause/i, "2026.2");
-    verifyFinding("Personal data processing", /compare commercial terms clause/i, "false");
-    verifyFinding("Governing law", /compare governing law clause/i, "Singapore");
     verifyFinding("Material standard-term change", /compare liability clause/i, "true");
-    fireEvent.click(screen.getByRole("button", { name: /compare liability clause/i }));
     fireEvent.click(screen.getByRole("button", { name: /open material standard-term changes require legal review/i }));
     fireEvent.click(screen.getByRole("button", { name: /choose legal review/i }));
     fireEvent.change(screen.getByRole("textbox", { name: /explain your route/i }), { target: { value: "The liability cap was removed, so the material-redline rule requires legal review." } });

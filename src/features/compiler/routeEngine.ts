@@ -73,6 +73,25 @@ export function evaluateRoute({
     };
   }
 
+  const routeRank: Record<Route, number> = {
+    legal_review: 3,
+    business_approval: 2,
+    signature: 1,
+  };
+  const knownMatches = useCase.playbookRules
+    .filter((rule) => verifiedFacts[rule.field] !== undefined && matchesRule(rule, verifiedFacts as PlaybookFacts))
+    .sort((left, right) => right.priority - left.priority || routeRank[right.route] - routeRank[left.route] || left.id.localeCompare(right.id));
+  const controllingEscalation = knownMatches.find((rule) => rule.route === "legal_review");
+  if (controllingEscalation) {
+    return {
+      route: controllingEscalation.route,
+      reasonCode: "PLAYBOOK_MATCH",
+      matchedRuleIds: [controllingEscalation.id],
+      sourceRefIds: [...controllingEscalation.sourceRefIds],
+      explanation: controllingEscalation.explanation,
+    };
+  }
+
   const missingFields = factFields.filter(
     (field) => verifiedFacts[field] === undefined || verifiedFacts[field] === null,
   );
@@ -87,11 +106,6 @@ export function evaluateRoute({
   }
 
   const facts = verifiedFacts as PlaybookFacts;
-  const routeRank: Record<Route, number> = {
-    legal_review: 3,
-    business_approval: 2,
-    signature: 1,
-  };
   const matches = useCase.playbookRules
     .filter((rule) => matchesRule(rule, facts))
     .sort(

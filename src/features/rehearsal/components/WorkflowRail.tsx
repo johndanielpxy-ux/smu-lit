@@ -1,10 +1,11 @@
 import type { RehearsalState, RehearsalTask } from "../rehearsalReducer";
 
-const tasks: Array<{ id: RehearsalTask; label: string }> = [
-  { id: "intake", label: "Open matter" }, { id: "run_ai_review", label: "Run AI review" },
-  { id: "verify_findings", label: "Verify findings" }, { id: "compare_clauses", label: "Compare clauses" },
-  { id: "apply_playbook", label: "Apply playbook" }, { id: "choose_route", label: "Choose route" },
-  { id: "inspect_audit", label: "Inspect audit" },
+const tasks: Array<{ ids: RehearsalTask[]; label: string }> = [
+  { ids: ["intake"], label: "Open matter" },
+  { ids: ["run_ai_review"], label: "Run legal AI" },
+  { ids: ["verify_findings", "compare_clauses"], label: "Verify the exception" },
+  { ids: ["apply_playbook", "choose_route"], label: "Apply rule & route" },
+  { ids: ["inspect_audit", "complete"], label: "Review audit" },
 ];
 const hints: Record<RehearsalTask, [string, string]> = {
   intake: ["Open the Northstar matter to inspect the submitted agreement.", "Start with the intake record before relying on any AI output."],
@@ -19,7 +20,7 @@ const hints: Record<RehearsalTask, [string, string]> = {
 
 export function WorkflowRail({ state, onHint }: { state: RehearsalState; onHint: () => void }) {
   return <aside className="matter__rail"><span className="matter__eyebrow">Guided matter</span><h2>Review path</h2>
-    <ol>{tasks.map((task, index) => <li key={task.id} className={state.task === task.id || state.repairTask === task.id ? "is-current" : ""}><span>{index + 1}</span>{task.label}</li>)}</ol>
+    <ol>{tasks.map((task, index) => <li key={task.label} className={task.ids.includes(state.repairTask ?? state.task) ? "is-current" : ""}><span>{index + 1}</span>{task.label}</li>)}</ol>
     {state.mode === "guided" && <button type="button" onClick={onHint}>Show a focused hint</button>}
     {(state.hintCounts[state.repairTask ?? state.task] ?? 0) > 0 && <section className="matter__hint" role="status" aria-label="Focused guidance"><strong>Focused guidance</strong><p>{hints[state.repairTask ?? state.task][Math.min((state.hintCounts[state.repairTask ?? state.task] ?? 1) - 1, 1)]}</p></section>}
   </aside>;
