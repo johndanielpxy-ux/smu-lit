@@ -1,15 +1,21 @@
 import { useState } from "react";
 import { demoUseCase } from "./demo/demoUseCase";
+import { approveUseCase, isApprovalCurrent } from "./domain/approval";
 import type { MatterShiftEvent, UseCase } from "./domain/mattershift";
 import {
   compileUseCase,
   type CompilerInput,
 } from "./features/compiler/compiler";
 import {
+  compileApprovedUseCase,
+  type CompiledMatterShiftBundle,
+} from "./features/compiler/bundleCompiler";
+import {
   getEvents,
   recordEvent,
   resetDemo,
 } from "./features/events/eventStore";
+import { EvidenceInspector } from "./features/evidence/EvidenceInspector";
 
 type Stage = "studio" | "episode" | "rehearsal" | "activation";
 
@@ -115,24 +121,85 @@ export function App() {
   const [useCase, setUseCase] = useState<UseCase>(() =>
     structuredClone(demoUseCase),
   );
+  const [draftPrepared, setDraftPrepared] = useState(false);
+  const [bundle, setBundle] = useState<CompiledMatterShiftBundle | null>(null);
   const [events, setEvents] = useState<MatterShiftEvent[]>([]);
-  const [status, setStatus] = useState("Ready to compile");
+  const [status, setStatus] = useState("Ready to prepare governed draft");
+  const approvalCurrent = isApprovalCurrent(useCase);
 
-  async function handleCompile() {
-    setStatus("Compiling source-linked workflow…");
+  async function handlePrepare() {
+    setStatus("Validating source-linked workflow…");
     const compiled = await compileUseCase(compilerInput);
     setUseCase(compiled);
-    recordEvent({ useCaseId: compiled.id, type: "use_case_compiled" });
-    setEvents(getEvents(compiled.id));
-    setStatus("Workflow compiled");
+    setDraftPrepared(true);
+    setBundle(null);
+    setEvents(getEvents(compiled.id, compiled.sourceVersion));
+    setStatus("Draft ready for approval");
+  }
+
+  function handleApprove() {
+    const approved = approveUseCase(
+      useCase,
+      "Jordan Lee (synthetic reviewer)",
+    );
+    setUseCase(approved);
+    recordEvent(
+      {
+        useCaseId: approved.id,
+        type: "human_approved",
+        metadata: {
+          approvalFingerprint: approved.approvalRecord!.contentFingerprint,
+          sourceVersion: approved.sourceVersion,
+        },
+      },
+      {
+        idempotencyKey: `approval:${approved.id}:${approved.approvalRecord!.contentFingerprint}`,
+      },
+    );
+    setEvents(getEvents(approved.id, approved.sourceVersion));
+    setStatus("Exact content and source version approved");
+  }
+
+  function handleGenerate() {
+    const compiledBundle = compileApprovedUseCase(useCase);
+    setBundle(compiledBundle);
+    recordEvent(
+      {
+        useCaseId: useCase.id,
+        type: "use_case_compiled",
+        metadata: {
+          bundleId: compiledBundle.manifest.bundleId,
+          sourceVersion: compiledBundle.manifest.sourceVersion,
+          approvalFingerprint: compiledBundle.manifest.approvalFingerprint,
+        },
+      },
+      { idempotencyKey: `compile:${compiledBundle.manifest.bundleId}` },
+    );
+    setEvents(getEvents(useCase.id, useCase.sourceVersion));
+    setStatus("Learning bundle generated");
+  }
+
+  function handleSourceOpen(sourceRefId: string) {
+    recordEvent({
+      useCaseId: useCase.id,
+      type: "source_opened",
+      metadata: {
+        sourceRefId,
+        sourceVersion: useCase.sourceVersion,
+        approvalFingerprint: useCase.approvalRecord!.contentFingerprint,
+      },
+    });
+    setEvents(getEvents(useCase.id, useCase.sourceVersion));
   }
 
   function handleReset() {
     resetDemo();
     setUseCase(structuredClone(demoUseCase));
+    setDraftPrepared(false);
+    setBundle(null);
     setEvents([]);
     setActiveStage("studio");
-    setStatus("Ready to compile");
+    setStatus("Ready to prepare governed draft");
   }
 
   return (
@@ -204,13 +271,31 @@ export function App() {
                     <p className="eyebrow">Use-Case Compiler</p>
                     <h2 id="studio-title">{useCase.title}</h2>
                   </div>
-                  <button
-                    className="primary-button"
-                    type="button"
-                    onClick={handleCompile}
-                  >
-                    Compile workflow
-                  </button>
+                  <div className="compiler-actions">
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={handlePrepare}
+                    >
+                      Prepare draft
+                    </button>
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={handleApprove}
+                      disabled={!draftPrepared || approvalCurrent}
+                    >
+                      Approve exact version
+                    </button>
+                    <button
+                      className="primary-button"
+                      type="button"
+                      onClick={handleGenerate}
+                      disabled={!approvalCurrent}
+                    >
+                      Generate learning bundle
+                    </button>
+                  </div>
                 </div>
 
                 <div className="status-line" role="status">
@@ -256,6 +341,14 @@ export function App() {
                     </article>
                   ))}
                 </div>
+
+                {bundle && (
+                  <EvidenceInspector
+                    bundle={bundle}
+                    events={events}
+                    onSourceOpen={handleSourceOpen}
+                  />
+                )}
               </section>
             ) : (
               <StagePlaceholder stage={activeStage} />

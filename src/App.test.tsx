@@ -21,21 +21,60 @@ describe("App integration shell", () => {
     expect(screen.getByRole("button", { name: /activation/i })).toBeInTheDocument();
   });
 
-  it("compiles the canonical workflow and records a truthful event", async () => {
+  it("requires an explicit approval before generating learning artefacts", async () => {
     render(<App />);
 
-    fireEvent.click(screen.getByRole("button", { name: /compile workflow/i }));
+    const generate = screen.getByRole("button", {
+      name: /generate learning bundle/i,
+    });
+    expect(generate).toBeDisabled();
 
-    expect(await screen.findByText("Workflow compiled")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /prepare draft/i }));
+    expect(await screen.findByText("Draft ready for approval")).toBeInTheDocument();
+    expect(generate).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: /approve exact version/i }));
+    expect(screen.getByText("human_approved")).toBeInTheDocument();
+    expect(generate).toBeEnabled();
+
+    fireEvent.click(generate);
+
+    expect(screen.getByText("Learning bundle generated")).toBeInTheDocument();
     expect(screen.getByText("use_case_compiled")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /evidence chain/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/bundle compilation observed/i)).toBeInTheDocument();
   });
 
-  it("resets observed events", async () => {
+  it("records human approval only after the named approval action", async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: /compile workflow/i }));
-    expect(await screen.findByText("use_case_compiled")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /prepare draft/i }));
+    expect(await screen.findByText("Draft ready for approval")).toBeInTheDocument();
+    expect(screen.queryByText("human_approved")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /approve exact version/i }));
+
+    expect(screen.getByText("human_approved")).toBeInTheDocument();
+  });
+
+  it("resets approval, bundle and observed events", async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /prepare draft/i }));
+    expect(await screen.findByText("Draft ready for approval")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /approve exact version/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /generate learning bundle/i }),
+    );
+    expect(screen.getByText("use_case_compiled")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /reset demo/i }));
     expect(screen.queryByText("use_case_compiled")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /evidence chain/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /generate learning bundle/i }),
+    ).toBeDisabled();
   });
 });
