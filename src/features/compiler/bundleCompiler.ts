@@ -257,7 +257,7 @@ export function compileApprovedTrainingModule(
     moduleContent: content,
     episode: {
       id: artifactIds.episode,
-      title: useCase.title,
+      title: useCase.generatedModuleDraft?.title ?? useCase.title,
       premise: useCase.problem,
       beats: useCase.steps.map((step, index) => ({
         id: `${artifactIds.episode}-beat-${index + 1}`,

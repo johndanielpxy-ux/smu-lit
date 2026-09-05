@@ -20,7 +20,35 @@ export interface EpisodeCue {
   checkpoint?: EpisodeCheckpoint;
 }
 
+function generatedTimeline(bundle: CompiledLawfloBundle): EpisodeCue[] | undefined {
+  const draft = bundle.useCase.generatedModuleDraft;
+  if (!draft) return undefined;
+  const visuals: EpisodeCue["visual"][] = ["portrait", "comparison", "routing"];
+  return draft.chapters.map((chapter, index) => ({
+    id: `generated-${chapter.id}`,
+    chapter: index + 1,
+    title: chapter.title,
+    durationSeconds: 25,
+    narration: chapter.narration,
+    caption: chapter.narration,
+    visual: visuals[index] ?? "contract",
+    sourceRefIds: chapter.sourceRefIds,
+    checkpoint: index === draft.chapters.length - 1 ? {
+      id: "generated-routing-checkpoint",
+      prompt: draft.checkpoint.question,
+      choices: draft.checkpoint.options.map((option) => ({
+        ...option,
+        safe: option.id === draft.checkpoint.correctOptionId,
+      })),
+      safeChoiceId: draft.checkpoint.correctOptionId,
+      sourceRefIds: draft.checkpoint.sourceRefIds,
+    } : undefined,
+  }));
+}
+
 export function createEpisodeTimeline(bundle: CompiledLawfloBundle): EpisodeCue[] {
+  const generated = generatedTimeline(bundle);
+  if (generated) return generated;
   const value = bundle.rehearsal.scenario.contractValue.toLocaleString("en-SG");
   return [
     {

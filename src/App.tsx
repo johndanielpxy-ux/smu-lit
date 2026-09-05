@@ -15,6 +15,7 @@ import { prepareDraftFromDemoPack } from "./features/compiler/compiler";
 import { EpisodePlayer } from "./features/episode/EpisodePlayer";
 import { clearEpisode } from "./features/episode/episodeStorage";
 import { GeneratedDraftPanel } from "./features/generation/GeneratedDraftPanel";
+import { applyGeneratedDraft } from "./features/generation/applyGeneratedDraft";
 import { useNarration } from "./features/generation/useNarration";
 import { getEvents, recordEvent, resetDemo } from "./features/events/eventStore";
 import { EvidenceInspector } from "./features/evidence/EvidenceInspector";
@@ -81,13 +82,11 @@ export function App() {
     catch (caught) { setError(caught instanceof Error ? caught.message : "The demo pack could not be prepared."); }
   }
   function handleGeneratedDraft(generatedModuleDraft: GeneratedModuleDraft) {
-    setUseCase((current) => ({
-      ...current,
-      generatedModuleDraft,
-      approvalStatus: "draft",
-      approvedBy: undefined,
-      approvalRecord: undefined,
-    }));
+    if (!demoPack) {
+      setError("Reload the governed input pack before attaching a generated draft.");
+      return;
+    }
+    setUseCase((current) => applyGeneratedDraft(current, generatedModuleDraft, demoPack));
     setStatus("Generated draft ready for human approval");
   }
   function handleApprove() {
