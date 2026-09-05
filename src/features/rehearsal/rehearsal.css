@@ -1,5 +1,5 @@
 .matter { min-height: 100vh; background: #e9e6df; color: #15201c; font-family: Inter, ui-sans-serif, system-ui, sans-serif; padding: 1rem; }
-.matter button { font: inherit; cursor: pointer; }
+.matter button { min-height: 44px; font: inherit; cursor: pointer; }
 .matter__top { display: flex; justify-content: space-between; align-items: end; max-width: 1500px; margin: 0 auto 1rem; padding: .5rem 0; }
 .matter__top h1 { margin: .2rem 0 0; font: 500 clamp(1.6rem, 3vw, 2.6rem)/1 Georgia, serif; }
 .matter__eyebrow { color: #9b4a32; text-transform: uppercase; letter-spacing: .13em; font-size: .68rem; font-weight: 700; }
