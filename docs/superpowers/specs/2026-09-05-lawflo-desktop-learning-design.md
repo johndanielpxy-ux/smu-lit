@@ -8,36 +8,45 @@
 ## 1. Product decision
 
 LAWFLO is a desktop-first platform that turns an approved, firm-specific legal
-workflow into a source-linked learning episode, a progressively guided matter
-rehearsal, a constructive learning review and a reusable point-of-work guide.
+AI workflow into a source-linked learning episode, a progressively guided
+matter rehearsal, a constructive learning review and a reusable point-of-work
+guide.
 
 The prototype has two connected experiences:
 
 1. A **Legal Engineer Studio** for preparing and approving the learning module.
-2. A **Lawyer Learning Workspace** for watching, practising and demonstrating
-   the workflow.
+2. A **Learner Workspace** for watching, practising and safely applying the
+   legal AI workflow.
 
 The prototype accepts a prepared set of synthetic files and a contributor
 portrait through real browser upload controls. It then compiles a deterministic
 module from the repository's canonical `UseCase`. It does not claim to generate
 arbitrary training content from any uploaded document.
 
-The production vision may use document extraction and generative models, but
-the hackathon demonstration proves the harder product mechanics: governance,
-source lineage, interactive learning, safe practice, observable coaching and
-change control.
+The canonical module must teach a workflow in which AI performs a substantive
+legal task, such as extracting contract terms, comparing clauses or proposing a
+risk classification. Generic form routing or rules automation alone does not
+qualify. Human verification, legal-playbook constraints and escalation remain
+part of every trained workflow.
+
+The production vision may use live document extraction and generative models,
+but the hackathon demonstration uses precomputed AI analysis so the learning
+journey remains deterministic. It proves governance, source lineage,
+interactive learning, safe practice, observable coaching and change control
+without pretending that arbitrary documents were analysed live.
 
 ## 2. Problem and value proposition
 
-Legal engineers and early adopters often establish useful AI-assisted
-workflows, but those workflows remain tribal knowledge. Ordinary training can
-show what to do without establishing whether a lawyer can safely perform the
-work on a matter.
+Legal engineers and early adopters often establish useful legal AI workflows,
+but those workflows remain tribal knowledge. Ordinary training can show which
+buttons to press without teaching a lawyer, legal-operations professional or
+business user when to verify AI output, apply the legal playbook or escalate to
+human counsel.
 
 LAWFLO turns one approved workflow into a governed learning loop:
 
 ```text
-Firm materials + contributor portrait
+Legal AI workflow + playbook + contributor portrait
                  |
                  v
        reviewable workflow draft
@@ -56,7 +65,7 @@ Firm materials + contributor portrait
 ```
 
 The differentiator is not video generation alone. LAWFLO joins content
-generation to safe performance practice and uses exact observed actions plus
+generation to safe legal AI practice and uses exact observed actions plus
 source-backed rules to decide where the learner needs more or less support.
 
 ## 3. Actors
@@ -66,15 +75,17 @@ source-backed rules to decide where the learner needs more or less support.
 The legal engineer:
 
 - selects the target role and practice group;
-- supplies the workflow, policy, sample matter and contributor portrait;
+- supplies the legal AI workflow, playbook, sample matter and contributor
+  portrait;
 - reviews extracted workflow steps and source coverage;
 - approves an exact content fingerprint and source version;
 - publishes the generated learning module;
 - inspects change impact when a policy or workflow changes.
 
-### 3.2 Lawyer learner
+### 3.2 Workflow learner
 
-The lawyer:
+The learner may be a lawyer, legal-operations professional, contract manager or
+business user expected to operate a legal-controlled AI workflow. The learner:
 
 - watches the interactive peer-led episode;
 - answers the in-episode safety checkpoint;
@@ -95,19 +106,22 @@ system.
 
 The only complete prototype module is the synthetic workflow:
 
-> From meeting to verified client-team update.
+> AI-Assisted Contract Review: Route a Sales Renewal.
 
-The learner must turn an authorised meeting transcript into reviewed minutes,
-one bounded legal research request, verified research support and a final
-client-team update.
+The learner must use a legal AI system to extract key terms from a routine sales
+renewal, compare the agreement with the approved template, verify the AI's
+findings, apply the legal review playbook and route the contract to business
+approval or human legal review with an explainable audit record.
 
 The demo pack contains:
 
-- a synthetic workflow/SOP document;
-- a synthetic responsible-AI policy;
-- a synthetic meeting transcript and matter brief;
+- a synthetic AI-assisted contract-review workflow;
+- a synthetic contract-review playbook and responsible-AI policy;
+- a synthetic standard renewal template and submitted renewal agreement;
 - a synthetic contributor portrait;
-- the expected reviewed output encoded in the canonical `UseCase`.
+- precomputed AI extraction and semantic clause-comparison results;
+- the expected verified findings and routing evidence encoded in the canonical
+  `UseCase`.
 
 The application provides both file inputs and a **Load synthetic demo pack**
 fallback. The fallback prevents a failed live demonstration while preserving
@@ -117,31 +131,33 @@ the visible end-to-end authoring process.
 
 ### 5.1 Studio intake
 
-The landing view is the Legal Engineer Studio. It shows four required inputs:
+The landing view is the Legal Engineer Studio. It shows five required inputs:
 
-1. Workflow instructions
-2. Responsible-AI policy
-3. Sample matter materials
-4. Contributor portrait
+1. Legal AI workflow instructions
+2. Contract-review playbook and responsible-AI policy
+3. Approved standard renewal template
+4. Sample submitted renewal agreement
+5. Contributor portrait
 
 The browser displays selected filenames, input categories and validation
 status. Text-based demo documents may be read locally for preview. The
 contributor image is previewed locally and is not uploaded to a server.
 
 The primary action is **Prepare workflow draft**. It remains disabled until all
-four input categories are present or the synthetic demo pack is loaded.
+five input categories are present or the synthetic demo pack is loaded.
 
 ### 5.2 Deterministic generation
 
 Preparation runs visible compiler stages:
 
 1. Validate inputs
-2. Resolve workflow steps
-3. Link guardrails to sources
-4. Build episode timeline
-5. Build the progressive rehearsal and optional replay configuration
-6. Build the coaching and reinforcement rules
-7. Build point-of-work guide
+2. Resolve the legal AI workflow steps
+3. Link playbook rules and guardrails to sources
+4. Load the precomputed AI term extraction and clause comparison
+5. Build the episode timeline
+6. Build the progressive rehearsal and optional replay configuration
+7. Build the coaching and reinforcement rules
+8. Build the point-of-work guide
 
 The stage display represents real deterministic functions, not timed theatre.
 Each stage must either produce its output or return a specific error.
@@ -150,8 +166,8 @@ The draft view exposes:
 
 - target role and practice group;
 - work trigger and expected outcome;
-- ordered tools and workflow steps;
-- guardrails and safe alternatives;
+- the AI tasks, ordered tools and workflow steps;
+- legal-playbook rules, guardrails and escalation conditions;
 - source coverage per instruction;
 - generated artefact manifest;
 - current approval status.
@@ -186,7 +202,8 @@ workflow. It includes:
 - captions enabled by default;
 - a searchable transcript and source rail;
 - playback, pause, replay and chapter navigation;
-- one confidentiality checkpoint that interrupts playback;
+- a checkpoint in which a low-value agreement contains a material non-standard
+  clause and therefore still requires legal escalation;
 - a direct handoff into practice.
 
 The learner cannot seek beyond an unanswered checkpoint. A wrong answer shows
@@ -203,25 +220,30 @@ lesson followed by an examination.
 
 The workspace contains:
 
-- **Matter files:** meeting transcript, matter brief and policy extracts;
-- **Minutes workspace:** generated draft minutes with one seeded factual error;
-- **Authorised AI workbench:** bounded prompt composer and deterministic output;
-- **Source viewer:** returned authorities with open, inspect, accept and reject
-  actions;
-- **Client update editor:** editable final communication;
+- **Contract files:** submitted renewal, approved template, playbook and policy;
+- **AI review panel:** precomputed term extraction, clause comparison and
+  proposed risk classification;
+- **Document comparison:** linked standard and submitted clauses with highlighted
+  deviations;
+- **Verification workspace:** controls to confirm, correct or reject each AI
+  finding;
+- **Routing panel:** business approval, signature or human legal review;
 - **Workflow rail:** current objective, completed actions and optional hints;
-- **Submission control:** send the work for simulated responsible-lawyer review.
+- **Audit panel:** inputs, rules, decisions, corrections and human-review reason.
 
 The learner completes these meaningful actions:
 
-1. Open the authorised transcript.
-2. Generate draft minutes in the authorised workspace.
-3. Compare the draft against the transcript and repair the seeded error.
-4. Create a minimum-necessary bounded research request.
-5. Avoid or recover from the unsafe full-transcript/public-tool action.
-6. Open and verify each material source.
-7. Revise the client-team update using verified information.
-8. Submit the work for human review.
+1. Confirm contract type, value, parties and template version.
+2. Run the simulated legal AI review.
+3. Inspect the AI-extracted terms against the contract text.
+4. Correct one deliberately inaccurate extracted term.
+5. Inspect the AI's semantic clause comparison rather than relying only on the
+   contract value.
+6. Identify a material change to the standard liability position.
+7. Apply the source-linked legal playbook and review the proposed risk route.
+8. Correct an unsafe low-risk recommendation and escalate the agreement to
+   human legal review.
+9. Inspect the final reasoning and audit record.
 
 Each task follows a progressive-support loop:
 
@@ -229,7 +251,7 @@ Each task follows a progressive-support loop:
 2. **Attempt:** ask the learner to act before revealing an answer.
 3. **Assist:** keep hints available but initially collapsed.
 4. **Protect:** quarantine an unsafe external action and explain its risk.
-5. **Verify:** compare the result with a transcript, source or policy.
+5. **Verify:** compare the AI result with the contract, template or playbook.
 6. **Reflect:** identify what the learner handled well and what to repair.
 
 Guidance fades during the same rehearsal. Early tasks identify both the
@@ -248,8 +270,8 @@ before the rehearsal completes.
 
 After the learning review, LAWFLO offers **Try this workflow without guidance**.
 This is a confidence-building option, not a qualification gate. It uses a
-shorter variation of the same approved workflow. Names, dates, assignments and
-the research issue differ, while the governing rules remain source-equivalent.
+shorter renewal variation with a different value and clause deviation while the
+governing playbook remains source-equivalent.
 
 Optional replay mode:
 
@@ -270,30 +292,31 @@ feedback and reinforcement. It does not certify fitness to use the workflow.
 
 **Process evidence** includes:
 
-- which tools and files were opened;
-- the order of required actions;
-- whether the unsafe route was attempted;
-- whether the prompt was bounded and minimised;
-- which sources were opened, accepted or rejected;
-- whether human review was requested.
+- which contract, template and playbook materials were opened;
+- whether each material AI finding was verified against contract text;
+- which AI findings were confirmed, corrected or rejected;
+- whether the learner inspected the material clause deviation;
+- which playbook rules were applied;
+- whether the proposed routing was accepted or corrected;
+- whether human legal review was requested when required.
 
 **Work-product evidence** includes:
 
-- whether the seeded factual error was corrected;
-- whether required action owners and deadlines remain present;
-- whether unsupported research propositions were removed;
-- whether the final update contains the expected safe sections.
+- whether the seeded extraction error was corrected;
+- whether contract value, template status and material deviations are accurate;
+- whether the risk classification matches the verified facts and playbook;
+- whether the routing decision contains a source-linked explanation.
 
 The review returns one learning state per dimension:
 
 | Dimension | Evidence of progress | Repair trigger |
 |---|---|---|
-| Authorised tool | Approved workbench selected | Public tool selected |
-| Data minimisation | Bounded prompt contains only necessary facts | Full transcript used |
-| Factual verification | Seeded error corrected against transcript | Incorrect deadline remains |
-| Source verification | Every material source opened and resolved | Citation accepted unopened |
-| Human responsibility | Work submitted for reviewer approval | Update treated as final AI output |
-| Output completeness | Required update sections are present | Action owner omitted |
+| AI-output verification | Material extracted terms checked against the contract | AI findings accepted unread |
+| Clause comparison | Standard and submitted clauses inspected | Contract value used as the only risk signal |
+| Playbook application | Relevant threshold and exception rules opened | Rule applied without its exceptions |
+| Risk reasoning | Route follows verified facts and linked rules | Non-standard liability clause classified low risk |
+| Human responsibility | Ambiguity or exception routed to legal review | AI recommendation treated as final legal judgement |
+| Audit completeness | Inputs, corrections, rule and reason are recorded | Routing decision has no explanation |
 
 States use constructive language such as **Completed independently**,
 **Completed with guidance** and **Revisit this step**. There is no opaque
@@ -313,10 +336,10 @@ Completing the progressively guided rehearsal produces a personalised compact
 activation card containing:
 
 - when to use the workflow;
-- approved tool sequence;
-- bounded-prompt template;
-- mandatory verification checks;
-- human-review requirement;
+- approved legal AI and review sequence;
+- contract-intake checklist;
+- mandatory AI-output and clause-verification checks;
+- playbook escalation conditions and human-review requirement;
 - links to the governing sources;
 - workflow and policy version.
 
@@ -360,6 +383,9 @@ GovernedCompiler -----> Approval + artefact manifest
 ### 6.2 Governed compiler
 
 - validates identifiers and source references;
+- distinguishes AI-produced findings from deterministic playbook rules and
+  human decisions;
+- binds the precomputed AI analysis to the exact synthetic contract version;
 - derives episode cues, progressive rehearsal tasks, optional replay variation,
   coaching rules and activation card;
 - creates a content-addressed manifest;
@@ -435,6 +461,9 @@ event stores before returning to Studio.
 | Unavailable local storage | Continue the journey without resume support |
 | Clipboard unavailable | Keep the prompt visible and selectable |
 | Portrait unavailable | Use a neutral generated monogram, not a broken image |
+| AI analysis does not match the selected contract | Block the rehearsal and identify the version mismatch |
+| Unverified material AI finding | Keep routing incomplete and direct the learner to the relevant clause |
+| Ambiguous playbook outcome | Require human legal review rather than infer a low-risk route |
 | Unsafe simulation action | Record and quarantine it; never transmit or silently pass |
 | Incomplete rehearsal submission | Identify missing evidence and open a focused, source-linked repair attempt |
 | Optional replay abandoned | Preserve the learning review and workflow-guide access |
@@ -444,7 +473,7 @@ The demo must never require a network call after the static site loads.
 ## 9. Visual and interaction direction
 
 The interface uses the permitted reference mechanics while translating them
-into legal-workflow training:
+into legal AI workflow training:
 
 - editorial typography and warm neutral surfaces;
 - restrained coral accents for current state and primary action;
@@ -469,6 +498,8 @@ user-facing copy and commit messages use only LAWFLO and legal-domain names.
 
 - demo-pack validation and canonical mapping;
 - compiler source resolution and approval invalidation;
+- contract-version binding for precomputed AI findings;
+- separation of AI findings, playbook rules and human routing decisions;
 - journey transition matrix;
 - episode seek and checkpoint enforcement;
 - generated rehearsal and optional-replay task completeness;
@@ -482,7 +513,8 @@ user-facing copy and commit messages use only LAWFLO and legal-domain names.
 - real file selection and synthetic-pack fallback;
 - prepare, approve and publish controls;
 - episode playback and checkpoint recovery;
-- guided unsafe attempt and safe repair;
+- guided acceptance of an unsafe AI route and source-linked repair;
+- correction of the deliberately inaccurate extracted term;
 - reduced guidance after a correct attempt;
 - focused repair after an incomplete submission;
 - optional replay availability without gating the guide;
@@ -497,8 +529,8 @@ The end-to-end suite covers:
 
 1. synthetic pack -> approval -> episode -> progressive rehearsal -> review ->
    activation;
-2. unsafe public-tool attempt and recovery;
-3. focused repair caused by skipped source verification;
+2. unsafe reliance on the AI's low-risk recommendation and recovery;
+3. focused repair caused by an unverified extracted term;
 4. refresh and resume;
 5. source-version change and reapproval;
 6. reset from a partially completed session;
@@ -513,12 +545,12 @@ Tests and build must pass without API credentials.
 The shipped product contains the complete journey, while the live demonstration
 uses a four-minute fast path:
 
-1. Load the synthetic demo pack and show the four inputs.
+1. Load the synthetic demo pack and show the five inputs.
 2. Prepare, inspect source coverage and approve the module.
 3. Start the generated episode and answer its checkpoint.
-4. Enter guided rehearsal and make the unsafe public-tool attempt.
-5. Recover, correct the seeded error and verify one source.
-6. Show the guidance fading on the final client-update task.
+4. Enter rehearsal and run the simulated AI contract review.
+5. Correct the seeded extraction error and inspect the liability deviation.
+6. Reject the unsafe low-risk route, apply the playbook and escalate to legal.
 7. Show the constructive review and personalised point-of-work guide.
 8. Reveal the optional solo replay, then open the evidence graph during
    technical questions.
@@ -533,12 +565,13 @@ steps, but the application must also support completing the journey normally.
 - authentication or role management;
 - face cloning, lip-sync or voice cloning;
 - pixel-level replicas of third-party applications;
-- live Teams, Outlook, document-management or legal-AI integration;
+- live contract-system, document-management or legal-AI integration;
+- a live model call or a claim that arbitrary uploaded contracts were analysed;
 - subjective model-based grading;
 - certification, fitness-to-use decisions or permanent learner failure;
 - production process mining;
 - fabricated adoption, efficiency or outcome metrics;
-- phone-based completion of the lawyer simulation.
+- phone-based completion of the legal AI simulation.
 
 ## 13. Completion criteria
 
@@ -546,6 +579,9 @@ The prototype is complete only when:
 
 - the legal engineer can load the demo inputs, inspect, approve and publish;
 - one approved bundle generates every learner artefact;
+- the canonical module visibly teaches AI extraction, semantic clause
+  comparison, human verification, playbook constraints and legal escalation;
+- the product never presents deterministic rules automation alone as legal AI;
 - the learner can complete the episode and progressively guided rehearsal on a
   desktop browser;
 - the optional solo replay is available but never gates the workflow guide;
