@@ -3,7 +3,6 @@ import type { MatterShiftEventReporter } from "../../domain/integration";
 import {
   createPortraitObjectUrl,
   DEMO_PACK_MARKERS,
-  demoPackStatus,
   loadSyntheticDemoPack,
   readDemoTextFile,
   releasePortraitUrl,
@@ -15,6 +14,7 @@ import "./studio.css";
 
 interface DemoPackInputProps {
   onReady: (pack: DemoPack) => void;
+  onCreate: (pack: DemoPack) => void;
   onEvent: MatterShiftEventReporter;
 }
 
@@ -26,39 +26,29 @@ const textKinds = ["workflow", "playbook", "template", "contract"] as const;
 type TextKind = (typeof textKinds)[number];
 
 const labels: Record<DemoPackKind, string> = {
-  workflow: "Workflow document",
+  workflow: "Workflow instructions",
   playbook: "Legal playbook",
-  template: "Approved contract template",
-  contract: "Submitted renewal contract",
+  template: "Approved template",
+  contract: "Example matter",
   portrait: "Contributor portrait",
 };
 
 function completePack(value: PartialDemoPack): DemoPack | null {
-  if (
-    !value.workflowText ||
-    !value.playbookText ||
-    !value.templateText ||
-    !value.contractText ||
-    !value.portraitUrl ||
-    !value.portraitUrlKind ||
-    textKinds.some((kind) => !value.filenames[kind]) ||
-    !value.filenames.portrait
-  ) {
-    return null;
-  }
-
-  return {
-    workflowText: value.workflowText,
-    playbookText: value.playbookText,
-    templateText: value.templateText,
-    contractText: value.contractText,
-    portraitUrl: value.portraitUrl,
-    portraitUrlKind: value.portraitUrlKind,
-    filenames: value.filenames as Record<DemoPackKind, string>,
-  };
+  if (!value.workflowText || !value.playbookText || !value.templateText || !value.contractText || !value.portraitUrl || !value.portraitUrlKind || textKinds.some((kind) => !value.filenames[kind]) || !value.filenames.portrait) return null;
+  return { workflowText: value.workflowText, playbookText: value.playbookText, templateText: value.templateText, contractText: value.contractText, portraitUrl: value.portraitUrl, portraitUrlKind: value.portraitUrlKind, filenames: value.filenames as Record<DemoPackKind, string> };
 }
 
-export function DemoPackInput({ onReady, onEvent }: DemoPackInputProps) {
+function kindFor(file: File, draft: PartialDemoPack): TextKind | "portrait" | undefined {
+  if (file.type.startsWith("image/")) return "portrait";
+  const name = file.name.toLowerCase();
+  if (name.includes("workflow")) return "workflow";
+  if (name.includes("playbook") || name.includes("policy")) return "playbook";
+  if (name.includes("template") || name.includes("standard")) return "template";
+  if (name.includes("contract") || name.includes("agreement") || name.includes("renewal")) return "contract";
+  return textKinds.find((kind) => !draft.filenames[kind]);
+}
+
+export function DemoPackInput({ onReady, onCreate, onEvent }: DemoPackInputProps) {
   const [draft, setDraft] = useState<PartialDemoPack>({ filenames: {} });
   const [error, setError] = useState<string>();
   const draftRef = useRef(draft);
@@ -69,34 +59,39 @@ export function DemoPackInput({ onReady, onEvent }: DemoPackInputProps) {
     setError(undefined);
     const complete = completePack(next);
     if (!complete) return;
-
     const validation = validateDemoPack(complete);
-    if (!validation.valid) {
-      setError(validation.errors.join(" "));
-      return;
-    }
+    if (!validation.valid) { setError(validation.errors.join(" ")); return; }
     onReady(complete);
     onEvent("demo_pack_loaded", { source, inputCount: 5 });
   }
 
-  function loadBundledPack() {
+  function loadPreparedPack() {
     releasePortraitUrl(draftRef.current.portraitUrl, draftRef.current.portraitUrlKind);
     replaceDraft(loadSyntheticDemoPack(), "bundled");
   }
 
-  async function selectTextFile(kind: TextKind, event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  async function selectResources(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    if (!files.length) return;
+    const next: PartialDemoPack = { ...draftRef.current, filenames: { ...draftRef.current.filenames } };
     try {
-      const text = await readDemoTextFile(file, DEMO_PACK_MARKERS[kind]);
-      const next: PartialDemoPack = {
-        ...draftRef.current,
-        [`${kind}Text`]: text,
-        filenames: { ...draftRef.current.filenames, [kind]: file.name },
-      };
+      for (const file of files) {
+        const kind = kindFor(file, next);
+        if (!kind) throw new Error(`${file.name} could not be matched to a workflow source.`);
+        if (kind === "portrait") {
+          const nextUrl = createPortraitObjectUrl(file);
+          releasePortraitUrl(next.portraitUrl, next.portraitUrlKind);
+          next.portraitUrl = nextUrl;
+          next.portraitUrlKind = "object_url";
+          next.filenames.portrait = file.name;
+        } else {
+          next[`${kind}Text`] = await readDemoTextFile(file, DEMO_PACK_MARKERS[kind]);
+          next.filenames[kind] = file.name;
+        }
+      }
       replaceDraft(next, "uploaded");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : `${file.name} could not be read.`);
+      setError(caught instanceof Error ? caught.message : "The selected resources could not be read.");
     }
   }
 
@@ -105,88 +100,31 @@ export function DemoPackInput({ onReady, onEvent }: DemoPackInputProps) {
     if (!file) return;
     try {
       const nextUrl = createPortraitObjectUrl(file);
-      releasePortraitUrl(
-        draftRef.current.portraitUrl,
-        draftRef.current.portraitUrlKind,
-      );
-      replaceDraft(
-        {
-          ...draftRef.current,
-          portraitUrl: nextUrl,
-          portraitUrlKind: "object_url",
-          filenames: { ...draftRef.current.filenames, portrait: file.name },
-        },
-        "uploaded",
-      );
+      releasePortraitUrl(draftRef.current.portraitUrl, draftRef.current.portraitUrlKind);
+      replaceDraft({ ...draftRef.current, portraitUrl: nextUrl, portraitUrlKind: "object_url", filenames: { ...draftRef.current.filenames, portrait: file.name } }, "uploaded");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : `${file.name} is not supported.`);
     }
   }
 
-  useEffect(
-    () => () => {
-      releasePortraitUrl(
-        draftRef.current.portraitUrl,
-        draftRef.current.portraitUrlKind,
-      );
-    },
-    [],
-  );
+  useEffect(() => () => releasePortraitUrl(draftRef.current.portraitUrl, draftRef.current.portraitUrlKind), []);
 
-  const status = demoPackStatus(draft);
+  const complete = completePack(draft);
+  const readyKinds = (Object.keys(labels) as DemoPackKind[]).filter((kind) => draft.filenames[kind]);
 
-  return (
-    <section className="demo-pack" aria-labelledby="demo-pack-title">
-      <div className="demo-pack__heading">
-        <div>
-          <p className="eyebrow">Legal engineer studio</p>
-          <h2 id="demo-pack-title">Build from five governed inputs</h2>
-          <p>
-            Four text sources are sent to the protected generation service only
-            when you generate. The portrait stays in this browser.
-          </p>
-        </div>
-        <button type="button" className="primary-button" onClick={loadBundledPack}>
-          Load synthetic demo pack
-        </button>
-      </div>
-
-      <div className="demo-pack__grid">
-        {textKinds.map((kind) => (
-          <label className="demo-file" key={kind}>
-            <span>{labels[kind]}</span>
-            <strong>{draft.filenames[kind] ?? "Not selected"}</strong>
-            <small>{draft.filenames[kind] ? "Ready · sent only for generation" : "Markdown or text · 2 MB max"}</small>
-            <input
-              type="file"
-              accept=".md,.txt,text/markdown,text/plain"
-              aria-label={`Select ${labels[kind].toLowerCase()}`}
-              onChange={(event) => void selectTextFile(kind, event)}
-            />
-          </label>
-        ))}
-        <label className="demo-file demo-file--portrait">
-          <span>{labels.portrait}</span>
-          <strong>{draft.filenames.portrait ?? "Not selected"}</strong>
-          <small>{draft.filenames.portrait ? "Ready · local only" : "PNG, JPEG or SVG · 2 MB max"}</small>
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/svg+xml"
-            aria-label="Select contributor portrait"
-            onChange={selectPortrait}
-          />
-          {draft.portraitUrl ? (
-            <img src={draft.portraitUrl} alt="Synthetic contributor preview" />
-          ) : null}
-        </label>
-      </div>
-
-      <div className="demo-pack__status" role="status">
-        {status.readyKinds.length === 5
-          ? "Five inputs ready"
-          : `${status.readyKinds.length} of 5 inputs ready`}
-      </div>
-      {error ? <p role="alert">{error}</p> : null}
-    </section>
-  );
+  return <section className="source-intake" aria-labelledby="demo-pack-title">
+    <header className="source-intake__header"><p className="entry__eyebrow">Legal engineer studio</p><h1 id="demo-pack-title">Create training from your workflow.</h1><p>Add the instructions and examples your team already uses. LAWFLO will turn them into a short episode and guided rehearsal.</p></header>
+    <label className="source-dropzone">
+      <span className="source-dropzone__mark" aria-hidden="true">＋</span>
+      <strong>Upload workflow resources</strong>
+      <small>Workflow, playbook, approved template and a synthetic example matter</small>
+      <input type="file" multiple accept=".md,.txt,text/markdown,text/plain,image/png,image/jpeg,image/svg+xml" aria-label="Upload workflow resources" onChange={(event) => void selectResources(event)} />
+    </label>
+    <div className="source-intake__or"><span>or</span></div>
+    <button type="button" className="source-intake__prepared" onClick={loadPreparedPack}>Use prepared source pack</button>
+    {readyKinds.length ? <ul className="source-list">{readyKinds.map((kind) => <li key={kind}><span aria-hidden="true">✓</span><div><strong>{labels[kind]}</strong><small>{draft.filenames[kind]}</small></div></li>)}</ul> : null}
+    <details className="source-settings"><summary>Source settings</summary><p>Approved text sources are sent to the protected generation service only when you generate. The portrait stays in this browser.</p><label>Upload contributor portrait<input type="file" accept="image/png,image/jpeg,image/svg+xml" aria-label="Upload contributor portrait" onChange={selectPortrait} /></label></details>
+    <footer className="source-intake__footer"><span role="status">{readyKinds.length} sources ready</span><button type="button" className="entry__primary" disabled={!complete} onClick={() => complete && onCreate(complete)}>Create episode</button></footer>
+    {error ? <p className="source-intake__error" role="alert">{error}</p> : null}
+  </section>;
 }
