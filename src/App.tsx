@@ -8,11 +8,13 @@ import { ChangeImpactPanel } from "./features/change-impact/ChangeImpactPanel";
 import { assessChangeImpact } from "./features/change-impact/changeImpact";
 import { LearningReview } from "./features/coaching/LearningReview";
 import { deriveLearningReview, type LearningReviewResult } from "./features/coaching/coachingEngine";
+import type { GeneratedModuleDraft } from "./domain/generation";
 import { compileApprovedTrainingModule, type CompiledLawfloBundle } from "./features/compiler/bundleCompiler";
 import { clearPublishedBundle, loadPublishedBundle, savePublishedBundle } from "./features/compiler/bundleStorage";
 import { prepareDraftFromDemoPack } from "./features/compiler/compiler";
 import { EpisodePlayer } from "./features/episode/EpisodePlayer";
 import { clearEpisode } from "./features/episode/episodeStorage";
+import { GeneratedDraftPanel } from "./features/generation/GeneratedDraftPanel";
 import { getEvents, recordEvent, resetDemo } from "./features/events/eventStore";
 import { EvidenceInspector } from "./features/evidence/EvidenceInspector";
 import { WorkflowGuide } from "./features/guide/WorkflowGuide";
@@ -41,6 +43,7 @@ export function App() {
     const restored = loadRehearsal({ bundleId: restoredBundle.manifest.bundleId, sourceVersion: restoredBundle.manifest.sourceVersion, contractVersion: restoredBundle.rehearsal.scenario.contractVersion, approvalFingerprint: restoredBundle.manifest.approvalFingerprint });
     return restored?.task === "complete" ? deriveLearningReview(restored, restoredBundle.coaching) : undefined;
   });
+  const [demoPack, setDemoPack] = useState<DemoPack>();
   const [status, setStatus] = useState(restoredBundle ? "Published module restored" : "Load five governed inputs to begin");
   const [error, setError] = useState<string>();
   const [governedOpen, setGovernedOpen] = useState(false);
@@ -72,8 +75,18 @@ export function App() {
   }, [bundle]);
 
   async function handlePack(pack: DemoPack) {
-    try { setError(undefined); setStatus("Checking the approved workflow markers…"); const draft = await prepareDraftFromDemoPack(pack); setUseCase(draft); setDraftPrepared(true); setStatus("Draft ready for named approval"); }
+    try { setError(undefined); setStatus("Checking the approved workflow markers…"); const draft = await prepareDraftFromDemoPack(pack); setDemoPack(pack); setUseCase(draft); setDraftPrepared(true); setStatus("Draft ready for named approval"); }
     catch (caught) { setError(caught instanceof Error ? caught.message : "The demo pack could not be prepared."); }
+  }
+  function handleGeneratedDraft(generatedModuleDraft: GeneratedModuleDraft) {
+    setUseCase((current) => ({
+      ...current,
+      generatedModuleDraft,
+      approvalStatus: "draft",
+      approvedBy: undefined,
+      approvalRecord: undefined,
+    }));
+    setStatus("Generated draft ready for human approval");
   }
   function handleApprove() {
     try {
@@ -101,7 +114,7 @@ export function App() {
   }
   function reset() {
     resetDemo(); clearJourney(); clearPublishedBundle(); if (bundle) { clearEpisode(bundle.manifest.bundleId); clearRehearsal(bundle.manifest.bundleId); }
-    setUseCase(structuredClone(demoUseCase)); setDraftPrepared(false); setBundle(undefined); setReview(undefined); setEvents([]); setStatus("Load five governed inputs to begin"); setError(undefined); setGovernedOpen(false); setResetKey((value) => value + 1); journeyDispatch({ type: "RESET" });
+    setUseCase(structuredClone(demoUseCase)); setDemoPack(undefined); setDraftPrepared(false); setBundle(undefined); setReview(undefined); setEvents([]); setStatus("Load five governed inputs to begin"); setError(undefined); setGovernedOpen(false); setResetKey((value) => value + 1); journeyDispatch({ type: "RESET" });
     window.setTimeout(() => studioHeading.current?.focus(), 0);
   }
 
@@ -116,7 +129,7 @@ export function App() {
     <header className="platform-header"><button className="platform-brand" type="button" onClick={() => bundle ? journeyDispatch({ type: "GO_TO", stage: "catalogue" }) : studioHeading.current?.focus()}><span>LF</span>LAWFLO</button><nav aria-label="Learning journey">{bundle && ["Episode", "Rehearsal", "Review", "Guide"].map((label) => <button key={label} type="button" onClick={() => journeyDispatch({ type: "GO_TO", stage: label.toLowerCase() as "episode" | "rehearsal" | "review" | "guide" })}>{label}</button>)}</nav><div><button type="button" onClick={() => setGovernedOpen((value) => !value)} disabled={!bundle}>How this is governed</button><button type="button" onClick={reset}>Reset demo</button></div></header>
     {error && <div className="platform-error" role="alert"><strong>LAWFLO paused safely.</strong><span>{error}</span><button type="button" onClick={() => setError(undefined)}>Dismiss</button></div>}
 
-    {stage === "studio" && <main className="platform-main"><section className="platform-hero"><span>Learn the workflow. Rehearse the judgment.</span><h1 ref={studioHeading} tabIndex={-1}>Turn legal AI pioneers into everyday practice.</h1><p>LAWFLO turns an approved legal-engineering workflow into a peer-led episode, a realistic contract matter and a source-linked desk guide.</p><div className="platform-pill-row"><span>Legal AI verification</span><span>Contract review</span><span>Human-controlled routing</span></div></section><DemoPackInput key={resetKey} onReady={(pack) => void handlePack(pack)} onEvent={prePublishReporter} /><section className="publication"><div><span>Publication boundary</span><h2>{useCase.title}</h2><p>{status}</p></div><div><button type="button" onClick={handleApprove} disabled={!draftPrepared || approvalCurrent}>Approve exact version</button><button type="button" onClick={handlePublish} disabled={!approvalCurrent}>Publish learning module</button></div></section>{bundle && changedImpact && <ChangeImpactPanel result={changedImpact} />}</main>}
+    {stage === "studio" && <main className="platform-main"><section className="platform-hero"><span>Learn the workflow. Rehearse the judgment.</span><h1 ref={studioHeading} tabIndex={-1}>Turn legal AI pioneers into everyday practice.</h1><p>LAWFLO turns an approved legal-engineering workflow into a peer-led episode, a realistic contract matter and a source-linked desk guide.</p><div className="platform-pill-row"><span>Legal AI verification</span><span>Contract review</span><span>Human-controlled routing</span></div></section><DemoPackInput key={resetKey} onReady={(pack) => void handlePack(pack)} onEvent={prePublishReporter} /><GeneratedDraftPanel pack={demoPack} onGenerated={handleGeneratedDraft} /><section className="publication"><div><span>Publication boundary</span><h2>{useCase.generatedModuleDraft?.title ?? useCase.title}</h2><p>{status}</p></div><div><button type="button" onClick={handleApprove} disabled={!draftPrepared || approvalCurrent}>Approve exact version</button><button type="button" onClick={handlePublish} disabled={!approvalCurrent}>Publish learning module</button></div></section>{bundle && changedImpact && <ChangeImpactPanel result={changedImpact} />}</main>}
 
     {stage === "catalogue" && bundle && <main className="catalogue"><section><span>Ready to learn the workflow</span><h1>One episode.<br/>One matter.<br/>One safer habit.</h1><p>Watch Maya catch the AI’s missed liability redline, then work the same legal AI workflow yourself.</p><button type="button" onClick={() => journeyDispatch({ type: "GO_TO", stage: "episode" })}>Watch episode</button></section><article><span>LAWFLO INTERACTIVE STORY · S1:E1</span><h2>{bundle.episode.title}</h2><p>100 sec · Deterministic · Source-linked and human-approved</p><strong>Featuring Maya Tan</strong></article></main>}
     {stage === "episode" && bundle && scopedReporter && <EpisodePlayer bundle={bundle} onEvent={scopedReporter} onComplete={() => journeyDispatch({ type: "EPISODE_COMPLETED" })} />}

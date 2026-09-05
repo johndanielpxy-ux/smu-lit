@@ -1,3 +1,5 @@
+import type { GeneratedModuleDraft } from "./generation";
+
 export type ApprovalStatus =
   | "draft"
   | "source_checked"
@@ -155,6 +157,7 @@ export interface UseCase {
   outcomeMetric: string;
   sources: SourceRef[];
   sourceVersion: string;
+  generatedModuleDraft?: GeneratedModuleDraft;
   approvalStatus: ApprovalStatus;
   approvedBy?: string;
   approvalRecord?: ApprovalRecord;

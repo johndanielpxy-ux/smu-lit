@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { resetDemo } from "./features/events/eventStore";
 
-beforeEach(() => { resetDemo(); window.localStorage.clear(); });
+beforeEach(() => { vi.unstubAllGlobals(); resetDemo(); window.localStorage.clear(); });
 
 async function publish() {
   fireEvent.click(screen.getByRole("button", { name: /load synthetic demo pack/i }));
@@ -21,6 +21,40 @@ function verifyFinding(label: string, clauseLabel: RegExp, value: string) {
 }
 
 describe("LAWFLO application", () => {
+  it("treats a generated episode as a new draft that requires fresh approval", async () => {
+    const generated = {
+      schemaVersion: "1.0",
+      title: "Generated redline episode",
+      learningObjectives: ["Verify AI findings."],
+      chapters: ["intake", "review", "route"].map((id) => ({
+        id,
+        title: id,
+        narration: `${id} narration`,
+        sourceRefIds: [id === "route" ? "playbook" : "workflow"],
+        shots: [1, 2, 3].map((shot) => ({ id: `${id}-${shot}`, prompt: `Shot ${shot}` })),
+      })),
+      checkpoint: {
+        question: "Where should it go?",
+        options: [{ id: "legal", label: "Legal" }, { id: "business", label: "Business" }],
+        correctOptionId: "legal",
+        explanation: "The playbook controls.",
+        sourceRefIds: ["playbook"],
+      },
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ draft: generated })));
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /load synthetic demo pack/i }));
+    expect(await screen.findByText(/draft ready for named approval/i)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /approve exact version/i }));
+    expect(screen.getByRole("button", { name: /approve exact version/i })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/studio production token/i), { target: { value: "token" } });
+    fireEvent.click(screen.getByRole("button", { name: /generate source-linked draft/i }));
+    expect(await screen.findByRole("heading", { level: 3, name: "Generated redline episode" })).toBeVisible();
+    expect(screen.getByText(/generated draft ready for human approval/i)).toBeVisible();
+    expect(screen.getByRole("button", { name: /approve exact version/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /publish learning module/i })).toBeDisabled();
+  });
+
   it("publishes and enters the complete legal AI learning journey", async () => {
     render(<App />);
     expect(screen.queryByText(/Ananya|Krishiv|Su-Ann/i)).not.toBeInTheDocument();
