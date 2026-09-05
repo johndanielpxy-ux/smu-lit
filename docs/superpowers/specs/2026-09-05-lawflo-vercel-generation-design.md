@@ -32,7 +32,7 @@ primary deployment.
 ```text
 Protected Studio
      |
-     | five source files + in-memory presenter token
+     | four text sources + contributor metadata + in-memory presenter token
      v
 Vercel /api/generation/module
      |-- method, origin, token and body-size gates
@@ -61,7 +61,8 @@ Public player -> checkpoint -> guided rehearsal -> learning review
   never committed, bundled, placed in a URL, or written to local storage.
 - Generation routes reject non-POST methods, missing or incorrect bearer tokens,
   unsupported content types, malformed bodies, and bodies above 100 KiB.
-- Only the five expected source roles are accepted. The initial production route
+- Only the four expected text-source roles are accepted. The contributor's
+  portrait remains local and is never sent to OpenAI. The initial production route
   supports the canonical synthetic demo pack, not arbitrary confidential client
   material.
 - OpenAI project-level spend limits are the final cost backstop. In-process rate

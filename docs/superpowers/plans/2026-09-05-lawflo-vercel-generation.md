@@ -14,7 +14,7 @@
 
 - Keep GitHub Pages as a working static fallback.
 - Never expose `OPENAI_API_KEY` or `LAWFLO_STUDIO_TOKEN` to browser code.
-- Accept at most 100 KiB and exactly the five canonical synthetic source roles.
+- Accept at most 100 KiB and exactly the four canonical synthetic text-source roles; keep the portrait local.
 - Never publish model output without exact-fingerprint human approval.
 - Never call a provider from unit or end-to-end tests.
 - Public playback must not spend credits or require network generation.
@@ -80,7 +80,7 @@ git commit -m "feat: add protected Vercel generation boundary"
 - Modify: `package.json`
 
 **Interfaces:**
-- Consumes: `readProtectedJson` and the canonical five source roles.
+- Consumes: `readProtectedJson`, four canonical text-source roles, and consented contributor metadata.
 - Produces: `GeneratedModuleDraft` with objectives, three cited chapters,
   approved-narration candidates, ordered shots, checkpoint, and source IDs.
 - Produces: `generateModuleDraft(input, provider?)` with provider injection for tests.
