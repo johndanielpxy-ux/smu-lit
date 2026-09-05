@@ -1,147 +1,243 @@
+import { trainingScenarioFingerprint } from "../domain/approval";
 import type { UseCase } from "../domain/mattershift";
+import { contractTrainingContent } from "./contractScenarios";
+
+const guidedScenario = contractTrainingContent.guidedScenario;
+const soloReplayScenario = contractTrainingContent.soloReplayScenario!;
 
 export const demoUseCase: UseCase = {
-  id: "meeting-to-verified-update",
-  title: "From meeting to verified client-team update",
+  id: "ai-assisted-sales-renewal-review",
+  title: "AI-Assisted Contract Review: Route a Sales Renewal",
   contributorName: "Maya Tan",
   contributorRole: "Legal Innovation Counsel",
   consentConfirmed: true,
-  targetRole: "Associates and senior associates",
-  practiceGroup: "Disputes",
+  targetRole: "Commercial lawyers, legal operations and contract managers",
+  practiceGroup: "Commercial Contracts",
   workTrigger:
-    "A client-team meeting ends with new facts, research questions and assigned actions.",
+    "A salesperson submits a routine sales renewal for review and approval.",
   problem:
-    "Lawyers manually reconstruct minutes, responsibilities and research questions across several tools, delaying follow-up and increasing the risk of unverified AI output or confidential information entering the workflow.",
+    "Routine renewals create a legal bottleneck, while an unchecked AI summary can miss a material change and send an unsafe agreement down a low-risk route.",
   approvedTools: [
-    "Microsoft Teams",
-    "Microsoft Copilot",
+    "Contract workflow",
     "Firm-authorised legal AI",
-    "Microsoft Outlook",
+    "Approved clause playbook",
+    "E-signature platform",
   ],
   steps: [
     {
-      id: "open-transcript",
-      title: "Open the authorised transcript",
-      tool: "Microsoft Teams",
+      id: "capture-request",
+      title: "Capture the renewal request",
+      tool: "Contract workflow",
       instruction:
-        "Open the meeting transcript inside the firm's authorised Microsoft environment.",
-      sourceRefIds: [
-        "authorised-systems",
-        "confidentiality-minimisation",
-      ],
-      riskLevel: "medium",
-      humanReviewRequired: false,
-    },
-    {
-      id: "draft-minutes",
-      title: "Draft minutes and actions",
-      tool: "Microsoft Copilot",
-      instruction:
-        "Ask Copilot for draft minutes, assigned actions and unresolved questions from the meeting.",
-      sourceRefIds: ["authorised-systems", "purpose-limitation"],
+        "Confirm the contract type, value, template version, counterparty and submitted agreement before analysis.",
+      sourceRefIds: ["renewal-routing-playbook", "approved-template-2026-2"],
       riskLevel: "medium",
       humanReviewRequired: true,
     },
     {
-      id: "verify-minutes",
-      title: "Verify the meeting record",
-      tool: "Microsoft Teams",
-      instruction:
-        "Compare the draft with the transcript and correct names, commitments and deadlines.",
-      sourceRefIds: ["verification", "human-responsibility"],
-      riskLevel: "high",
-      humanReviewRequired: true,
-    },
-    {
-      id: "bounded-legal-request",
-      title: "Ask one bounded legal question",
+      id: "run-ai-review",
+      title: "Run the approved AI review",
       tool: "Firm-authorised legal AI",
       instruction:
-        "Convert one unresolved issue into a sanitised, bounded request using only the minimum necessary information.",
-      sourceRefIds: [
-        "confidentiality-minimisation",
-        "purpose-limitation",
-      ],
-      riskLevel: "high",
+        "Extract key terms and compare the submitted clauses with the approved template inside the authorised system.",
+      sourceRefIds: ["authorised-ai-policy", "approved-template-2026-2"],
+      riskLevel: "medium",
       humanReviewRequired: true,
     },
     {
-      id: "verify-sources",
-      title: "Open and verify every material source",
+      id: "verify-findings",
+      title: "Verify every material AI finding",
       tool: "Firm-authorised legal AI",
       instruction:
-        "Open each material cited source and revise or remove unsupported propositions.",
-      sourceRefIds: ["verification"],
+        "Open the underlying agreement and confirm or correct each material finding before relying on the proposed route.",
+      sourceRefIds: ["ai-verification-policy", "human-responsibility"],
       riskLevel: "high",
       humanReviewRequired: true,
     },
     {
-      id: "send-reviewed-update",
-      title: "Send the reviewed update",
-      tool: "Microsoft Outlook",
+      id: "compare-standard-terms",
+      title: "Compare changed standard terms",
+      tool: "Approved clause playbook",
       instruction:
-        "A responsible lawyer reviews and approves the final update before it is shared.",
-      sourceRefIds: ["human-responsibility"],
+        "Compare highlighted submitted text with the approved template and identify material legal deviations.",
+      sourceRefIds: ["approved-template-2026-2", "material-redline-rule"],
+      riskLevel: "high",
+      humanReviewRequired: true,
+    },
+    {
+      id: "apply-routing-playbook",
+      title: "Apply the legal routing playbook",
+      tool: "Contract workflow",
+      instruction:
+        "Apply the current playbook to verified facts; a material standard-term change overrides the low-value shortcut.",
+      sourceRefIds: ["renewal-routing-playbook", "material-redline-rule"],
+      riskLevel: "high",
+      humanReviewRequired: true,
+    },
+    {
+      id: "route-with-reason",
+      title: "Route with an auditable reason",
+      tool: "Contract workflow",
+      instruction:
+        "Send low-risk renewals to business approval and escalate material changes to legal with the source-linked reason.",
+      sourceRefIds: ["renewal-routing-playbook", "human-responsibility"],
       riskLevel: "high",
       humanReviewRequired: true,
     },
   ],
+  aiOperations: [
+    {
+      id: "extract-commercial-terms",
+      task: "extract",
+      tool: "Firm-authorised legal AI",
+      description: "Extract contract value, term, template version and governing law.",
+      verificationInstruction:
+        "Compare each extracted term with the submitted agreement before confirming it.",
+      sourceRefIds: ["authorised-ai-policy", "ai-verification-policy"],
+    },
+    {
+      id: "compare-contract-clauses",
+      task: "compare",
+      tool: "Firm-authorised legal AI",
+      description: "Compare submitted clauses with approved standard terms.",
+      verificationInstruction:
+        "Open every clause flagged or omitted as material and compare both versions directly.",
+      sourceRefIds: ["approved-template-2026-2", "ai-verification-policy"],
+    },
+    {
+      id: "classify-routing-risk",
+      task: "classify",
+      tool: "Firm-authorised legal AI",
+      description: "Propose a route from the extracted and compared terms.",
+      verificationInstruction:
+        "Treat the proposed route as unverified until a human applies the current playbook.",
+      sourceRefIds: ["renewal-routing-playbook", "human-responsibility"],
+    },
+  ],
+  playbookRules: [
+    {
+      id: "material-redline-review",
+      label: "Material standard-term changes require legal review",
+      field: "materialRedline",
+      operator: "eq",
+      value: true,
+      route: "legal_review",
+      priority: 100,
+      explanation:
+        "A material change to an approved standard term requires legal review regardless of contract value.",
+      sourceRefIds: ["material-redline-rule"],
+    },
+    {
+      id: "personal-data-review",
+      label: "Changed personal-data terms require legal review",
+      field: "personalData",
+      operator: "eq",
+      value: true,
+      route: "legal_review",
+      priority: 90,
+      explanation:
+        "A renewal containing changed personal-data processing terms requires legal review.",
+      sourceRefIds: ["material-redline-rule"],
+    },
+    {
+      id: "foreign-law-review",
+      label: "Non-Singapore governing law requires legal review",
+      field: "governingLaw",
+      operator: "neq",
+      value: "Singapore",
+      route: "legal_review",
+      priority: 80,
+      explanation: "A change from the approved governing law requires legal review.",
+      sourceRefIds: ["renewal-routing-playbook"],
+    },
+    {
+      id: "low-value-business-approval",
+      label: "Low-value unchanged renewal may proceed to business approval",
+      field: "contractValue",
+      operator: "lt",
+      value: 50_000,
+      route: "business_approval",
+      priority: 20,
+      explanation:
+        "A renewal under SGD 50,000 may use the low-risk route only when no higher-priority legal-review rule matches.",
+      sourceRefIds: ["renewal-routing-playbook"],
+    },
+    {
+      id: "known-value-signature",
+      label: "A verified contract value is required before signature",
+      field: "contractValue",
+      operator: "present",
+      route: "signature",
+      priority: 1,
+      explanation: "A contract cannot proceed without a verified value.",
+      sourceRefIds: ["renewal-routing-playbook"],
+    },
+  ],
+  scenarioRefs: [guidedScenario, soloReplayScenario].map((scenario) => ({
+    scenarioId: scenario.id,
+    mode: scenario.mode,
+    scenarioVersion: scenario.contractVersion,
+    contentFingerprint: trainingScenarioFingerprint(scenario),
+  })),
   guardrails: [
     {
-      id: "no-confidential-data-in-public-ai",
+      id: "never-route-from-ai-alone",
       rule:
-        "Client-related information may be processed only in approved systems, using the minimum information required.",
+        "AI findings and routes are drafts until a human verifies the agreement and applies the current playbook.",
       prohibitedAction:
-        "Paste the complete confidential transcript into a free public AI service.",
+        "Accept the AI's low-risk recommendation without opening the material clauses.",
       safeAlternative:
-        "Use the firm-authorised system, remove unnecessary identifying information, ask one bounded question, verify the sources and obtain human approval before sharing the result.",
-      sourceRefIds: [
-        "authorised-systems",
-        "confidentiality-minimisation",
-        "purpose-limitation",
-      ],
+        "Verify every material finding, compare changed clauses and escalate uncertainty to legal review.",
+      sourceRefIds: ["ai-verification-policy", "human-responsibility"],
     },
   ],
   expectedOutcome:
-    "A reviewed meeting summary, verified research note and approved update, prepared without transferring confidential information to unapproved tools or removing human responsibility.",
-  outcomeMetric: "Elapsed time from meeting end to approved update",
+    "A verified, source-linked route decision that escalates material deviations and sends genuinely low-risk renewals forward without unnecessary legal handling.",
+  outcomeMetric: "Observed completion of every governed verification and routing step",
   sources: [
     {
-      id: "authorised-systems",
-      title: "Meridian & Rowe Synthetic Responsible AI Policy",
-      version: "1.0",
+      id: "renewal-routing-playbook",
+      title: "Meridian & Rowe Synthetic Sales Renewal Playbook",
+      version: "2026.2",
       excerpt:
-        "Client-related information may be processed only in systems approved by the firm for that information category.",
+        "Renewals below SGD 50,000 may proceed without legal review only when the approved template is unchanged and all material facts have been verified.",
     },
     {
-      id: "confidentiality-minimisation",
-      title: "Meridian & Rowe Synthetic Responsible AI Policy",
-      version: "1.0",
+      id: "material-redline-rule",
+      title: "Meridian & Rowe Synthetic Sales Renewal Playbook",
+      version: "2026.2",
       excerpt:
-        "Do not place confidential, privileged or personal information into public AI services. Use the minimum information required and anonymise or redact where appropriate.",
+        "Any material change to liability, data processing, governing law or another standard legal term must be escalated to legal review regardless of value.",
     },
     {
-      id: "purpose-limitation",
-      title: "Meridian & Rowe Synthetic Responsible AI Policy",
-      version: "1.0",
+      id: "approved-template-2026-2",
+      title: "Meridian & Rowe Synthetic Sales Renewal Template",
+      version: "2026.2",
       excerpt:
-        "Use AI only for a defined work task. Do not upload an entire matter file when a bounded question or extract is sufficient.",
+        "The approved template caps aggregate liability at fees paid in the preceding twelve months and applies Singapore law.",
     },
     {
-      id: "verification",
+      id: "authorised-ai-policy",
       title: "Meridian & Rowe Synthetic Responsible AI Policy",
-      version: "1.0",
+      version: "1.1",
       excerpt:
-        "A lawyer must check material factual and legal propositions against reliable, openable sources before relying on or sharing the output.",
+        "Contract content may be processed only in the firm's authorised legal AI environment for the defined review task.",
+    },
+    {
+      id: "ai-verification-policy",
+      title: "Meridian & Rowe Synthetic Responsible AI Policy",
+      version: "1.1",
+      excerpt:
+        "AI extraction, comparison and classification outputs are drafts. Open the underlying material and verify every material finding before reliance.",
     },
     {
       id: "human-responsibility",
       title: "Meridian & Rowe Synthetic Responsible AI Policy",
-      version: "1.0",
+      version: "1.1",
       excerpt:
-        "AI output is a draft. A responsible lawyer must review and approve the final work product before it is sent, filed or used for advice.",
+        "The responsible human decision-maker remains accountable for applying the current playbook and escalating uncertainty.",
     },
   ],
-  sourceVersion: "1.0",
+  sourceVersion: "2026.2",
   approvalStatus: "draft",
 };

@@ -3,8 +3,14 @@ import { validateUseCase } from "../domain/mattershift";
 import { demoUseCase } from "./demoUseCase";
 
 describe("demoUseCase", () => {
-  it("is a valid source-linked use case", () => {
+  it("is a valid contract-review legal AI workflow", () => {
     expect(validateUseCase(demoUseCase)).toEqual({ valid: true, errors: [] });
+    expect(demoUseCase.id).toBe("ai-assisted-sales-renewal-review");
+    expect(demoUseCase.aiOperations.map((operation) => operation.task)).toEqual([
+      "extract",
+      "compare",
+      "classify",
+    ]);
   });
 
   it("uses only synthetic identities and begins in draft", () => {
@@ -13,11 +19,15 @@ describe("demoUseCase", () => {
     expect(demoUseCase.consentConfirmed).toBe(true);
   });
 
-  it("contains the complete six-step cross-tool workflow", () => {
-    expect(demoUseCase.steps).toHaveLength(6);
-    expect(demoUseCase.approvedTools).toContain("Firm-authorised legal AI");
-    expect(demoUseCase.steps.every((step) => step.sourceRefIds.length > 0)).toBe(
-      true,
-    );
+  it("binds guided and solo scenarios into the approval material", () => {
+    expect(demoUseCase.scenarioRefs).toEqual([
+      expect.objectContaining({ mode: "guided", scenarioVersion: "1.0" }),
+      expect.objectContaining({ mode: "solo_replay", scenarioVersion: "1.0" }),
+    ]);
+    expect(
+      demoUseCase.scenarioRefs.every((scenario) =>
+        /^scenario-[0-9a-f]{8}$/.test(scenario.contentFingerprint),
+      ),
+    ).toBe(true);
   });
 });

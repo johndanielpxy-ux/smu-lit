@@ -42,6 +42,16 @@ describe("approval lifecycle", () => {
     expect(invalidateApprovalIfChanged(approved, edited).approvalStatus).toBe("draft");
   });
 
+  it("invalidates approval when approved scenario content changes", () => {
+    const approved = approveUseCase(demoUseCase, "Jordan Lee");
+    const edited = structuredClone(approved);
+    edited.scenarioRefs[0].contentFingerprint = "scenario-deadbeef";
+
+    expect(invalidateApprovalIfChanged(approved, edited).approvalStatus).toBe(
+      "draft",
+    );
+  });
+
   it("preserves approval when only a cloned object is supplied", () => {
     const approved = approveUseCase(demoUseCase, "Jordan Lee");
 

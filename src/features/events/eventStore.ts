@@ -7,13 +7,22 @@ const STORAGE_KEY = "lawflo.observed-events.v1";
 const SCHEMA_VERSION = 1;
 
 const allowedEventTypes: ReadonlySet<MatterShiftEventType> = new Set([
-  "use_case_compiled",
-  "source_opened",
+  "demo_pack_loaded",
   "human_approved",
+  "use_case_compiled",
+  "module_published",
+  "source_opened",
   "episode_started",
   "checkpoint_answered",
-  "rehearsal_passed",
-  "activation_opened",
+  "rehearsal_started",
+  "ai_analysis_opened",
+  "ai_finding_resolved",
+  "playbook_rule_opened",
+  "route_selected",
+  "repair_completed",
+  "rehearsal_completed",
+  "workflow_guide_opened",
+  "solo_replay_started",
 ]);
 
 export interface KeyValueStorage {

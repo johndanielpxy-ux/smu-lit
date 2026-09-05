@@ -52,7 +52,7 @@ describe("persistent observed-event store", () => {
 
     expect(() =>
       store.record(
-        { useCaseId: "uc-1", type: "activation_opened" },
+        { useCaseId: "uc-1", type: "workflow_guide_opened" },
         { idempotencyKey: "surface-action" },
       ),
     ).toThrow("Idempotency key collision");
@@ -128,7 +128,10 @@ describe("persistent observed-event store", () => {
     );
     const store = createEventStore({ storage });
 
-    const event = store.record({ useCaseId: "uc-1", type: "activation_opened" });
+    const event = store.record({
+      useCaseId: "uc-1",
+      type: "workflow_guide_opened",
+    });
 
     expect(store.getEvents("uc-1")).toEqual([event]);
     expect(event.id).toBe("event-1");
@@ -141,12 +144,12 @@ describe("persistent observed-event store", () => {
     });
     store.record({ useCaseId: "uc-1", type: "episode_started" });
     store.record({ useCaseId: "uc-2", type: "episode_started" });
-    store.record({ useCaseId: "uc-1", type: "activation_opened" });
+    store.record({ useCaseId: "uc-1", type: "workflow_guide_opened" });
 
     expect(store.getSummary("uc-1")).toEqual({
       useCaseId: "uc-1",
       totalObserved: 2,
-      counts: { episode_started: 1, activation_opened: 1 },
+      counts: { episode_started: 1, workflow_guide_opened: 1 },
       lastOccurredAt: "2026-09-05T05:00:00.000Z",
     });
   });

@@ -1,4 +1,8 @@
-import { validateUseCase, type UseCase } from "./mattershift";
+import {
+  validateUseCase,
+  type ContractScenario,
+  type UseCase,
+} from "./mattershift";
 
 function stableSerialize(value: unknown): string {
   if (value === null || typeof value !== "object") {
@@ -36,6 +40,12 @@ export function useCaseMaterialFingerprint(useCase: UseCase): string {
   } = useCase;
 
   return `msc-${fnv1a32(stableSerialize(materialContent))}`;
+}
+
+export function trainingScenarioFingerprint(
+  scenario: ContractScenario,
+): string {
+  return `scenario-${fnv1a32(stableSerialize(scenario))}`;
 }
 
 export function isApprovalCurrent(useCase: UseCase): boolean {

@@ -54,12 +54,13 @@ describe("compileApprovedUseCase", () => {
     expect(() => compileApprovedUseCase(stale)).toThrow("current human approval");
   });
 
-  it("rejects duplicate identifiers before deriving artefacts", () => {
+  it("rejects duplicate identifiers before approval", () => {
     const duplicate = structuredClone(demoUseCase);
     duplicate.steps.push({ ...duplicate.steps[0] });
-    const approved = approveUseCase(duplicate, "Jordan Lee");
 
-    expect(() => compileApprovedUseCase(approved)).toThrow("Duplicate workflow step id");
+    expect(() => approveUseCase(duplicate, "Jordan Lee")).toThrow(
+      "Duplicate workflow step id",
+    );
   });
 
   it("rejects source references that cannot be resolved", () => {

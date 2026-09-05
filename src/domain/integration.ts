@@ -1,4 +1,5 @@
 import type {
+  EventScope,
   MatterShiftEvent,
   MatterShiftEventType,
   UseCase,
@@ -6,9 +7,14 @@ import type {
 
 export type MatterShiftEventMetadata = NonNullable<MatterShiftEvent["metadata"]>;
 
+export interface ReportEventOptions {
+  idempotencyKey?: string;
+}
+
 export type MatterShiftEventReporter = (
   eventType: MatterShiftEventType,
   metadata?: MatterShiftEventMetadata,
+  options?: ReportEventOptions,
 ) => void;
 
 export interface LegalEngineerStudioProps {
@@ -35,22 +41,31 @@ export interface ActivationCardProps {
 }
 
 export function createScopedEventReporter(
-  useCase: Pick<UseCase, "id" | "sourceVersion" | "approvalRecord">,
+  scope: EventScope,
   record: (
     event: Omit<MatterShiftEvent, "id" | "occurredAt">,
+    options?: ReportEventOptions,
   ) => MatterShiftEvent,
 ): MatterShiftEventReporter {
-  return (type, metadata) => {
-    record({
-      useCaseId: useCase.id,
-      type,
-      metadata: {
-        ...metadata,
-        sourceVersion: useCase.sourceVersion,
-        ...(useCase.approvalRecord
-          ? { approvalFingerprint: useCase.approvalRecord.contentFingerprint }
-          : {}),
+  const scopeMetadata: MatterShiftEventMetadata = {
+    sourceVersion: scope.sourceVersion,
+    ...(scope.contractVersion
+      ? { contractVersion: scope.contractVersion }
+      : {}),
+    ...(scope.approvalFingerprint
+      ? { approvalFingerprint: scope.approvalFingerprint }
+      : {}),
+    ...(scope.bundleId ? { bundleId: scope.bundleId } : {}),
+  };
+
+  return (type, metadata, options) => {
+    record(
+      {
+        useCaseId: scope.useCaseId,
+        type,
+        metadata: { ...metadata, ...scopeMetadata },
       },
-    });
+      options,
+    );
   };
 }

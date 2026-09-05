@@ -56,10 +56,10 @@ function eventSurfaceIds(
   if (event.type === "episode_started" || event.type === "checkpoint_answered") {
     return [`artifact:${bundle.episode.id}`];
   }
-  if (event.type === "rehearsal_passed") {
+  if (event.type === "rehearsal_completed") {
     return [`artifact:${bundle.rehearsal.id}`];
   }
-  if (event.type === "activation_opened") {
+  if (event.type === "workflow_guide_opened") {
     return [`artifact:${bundle.activationCard.id}`];
   }
   if (event.type === "source_opened") {

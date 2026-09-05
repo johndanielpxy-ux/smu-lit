@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createScopedEventReporter } from "./integration";
 
 describe("createScopedEventReporter", () => {
-  it("binds teammate callbacks to the canonical use case and event shape", () => {
+  it("binds every callback to the complete approved bundle scope", () => {
     const record = vi.fn((event) => ({
       ...event,
       id: "event-1",
@@ -10,28 +10,34 @@ describe("createScopedEventReporter", () => {
     }));
     const report = createScopedEventReporter(
       {
-        id: "canonical-use-case",
+        useCaseId: "sales-renewal-review",
         sourceVersion: "2.0",
-        approvalRecord: {
-          approvedBy: "Jordan Lee",
-          approvedAt: "2026-09-05T05:00:00.000Z",
-          contentFingerprint: "msc-12345678",
-          sourceVersion: "2.0",
-        },
+        contractVersion: "contract-1.0",
+        approvalFingerprint: "msc-12345678",
+        bundleId: "lawflo-bundle-1",
       },
       record,
     );
 
-    report("checkpoint_answered", { safe: true });
+    report(
+      "checkpoint_answered",
+      { safe: true },
+      { idempotencyKey: "checkpoint:route-risk" },
+    );
 
-    expect(record).toHaveBeenCalledWith({
-      useCaseId: "canonical-use-case",
-      type: "checkpoint_answered",
-      metadata: {
-        safe: true,
-        sourceVersion: "2.0",
-        approvalFingerprint: "msc-12345678",
+    expect(record).toHaveBeenCalledWith(
+      {
+        useCaseId: "sales-renewal-review",
+        type: "checkpoint_answered",
+        metadata: {
+          safe: true,
+          sourceVersion: "2.0",
+          contractVersion: "contract-1.0",
+          approvalFingerprint: "msc-12345678",
+          bundleId: "lawflo-bundle-1",
+        },
       },
-    });
+      { idempotencyKey: "checkpoint:route-risk" },
+    );
   });
 });

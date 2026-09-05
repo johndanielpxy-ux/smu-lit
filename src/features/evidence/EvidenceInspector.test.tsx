@@ -19,7 +19,7 @@ describe("EvidenceInspector", () => {
       />,
     );
     const source = screen.getAllByRole("button", {
-      name: /meridian & rowe synthetic responsible ai policy/i,
+      name: /meridian & rowe synthetic sales renewal playbook/i,
     })[0];
 
     expect(source).toHaveAttribute("aria-expanded", "false");
