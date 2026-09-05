@@ -1,34 +1,51 @@
 # LAWFLO judge demo
 
-## Four-minute route
+## Three-minute route
 
-**0:00 — The problem.** “Legal engineers build safe AI workflows, but the rest of the firm still has to learn the judgment inside them. LAWFLO turns an approved workflow into something lawyers can watch, rehearse and keep beside them.”
+**0:00 — Enter the platform.** Select **Enter LAWFLO**, then **Legal engineer**.
+Say: “Legal engineers build safe AI workflows, but those workflows still need to
+reach everyone expected to use them.”
 
-**0:25 — Build from governed inputs.** Select **Load synthetic demo pack**. Point out the workflow, legal playbook, approved template, submitted renewal and fictional contributor portrait. Say that every file stays in the browser. Select **Approve exact version**, then **Publish learning module**.
+**0:12 — Supply the firm's workflow.** Select **Use prepared source pack**, then
+**Create episode**. Say: “LAWFLO starts with the firm's approved workflow,
+playbook, template and example matter.”
 
-**0:55 — Peer-led interactive story.** Select **Watch episode**. Point out the visible deterministic-fallback label: this prototype has an interactive, timed story rather than pretending that static scenes are generated video. Open **Sources** briefly, then close it. Jump to Chapter 6: LAWFLO stops at the decision checkpoint. Select **Send to business approval** first to show the safe correction, then **Escalate to legal review** and **Continue to rehearsal**.
+**0:28 — Generate training.** Let the prepared-demo production sequence resolve.
+Say: “The same pipeline writes the source-linked script and storyboard, then
+Runway produces the cinematic scenes. For a reliable three-minute demo, this is
+the approved render we generated beforehand.”
 
-**1:35 — Simulated legal AI matter.** Select **Open Northstar matter** and **Run AI review**. Explain that the AI correctly extracted the SGD 42,000 value and template version but missed an unlimited-liability redline.
+**0:38 — Keep a human in control.** Preview the episode, select **Approve and
+publish**, then **View as learner**.
 
-**2:00 — Verify, don’t trust.** Open each finding, compare its supporting clause and enter the value you can actually verify. LAWFLO does not show the answer first. For **Material standard-term change**, compare **Limitation of liability** and enter `true`. Open **Material standard-term changes require legal review** in the playbook.
+**0:50 — Learn through the episode.** Select **Start episode**. At the checkpoint,
+choose the unsafe low-risk route once, read the short correction, then choose
+**Escalate to Legal review**. Let the final segment finish.
 
-**2:45 — Human-controlled route.** Choose **Legal review**, write a short rationale naming the removed liability cap and the material-redline rule, submit the route and inspect the audit trail. The review explains what the learner handled independently and what was repaired; it never labels the person as pass/fail.
+**1:42 — Transfer learning into practice.** Select **Start guided rehearsal**.
+Run the legal AI review, open the liability finding and verify it against the
+agreement. Open the matched playbook rule, choose **Legal review**, enter a short
+reason and submit.
 
-**3:20 — Keep it at the desk.** Open the workflow guide. Show the legal-AI sequence, verification checks, escalation conditions and source desk. Open **How this is governed** to reveal the clause → AI finding → human correction → playbook rule → route → coaching evidence chain.
+**2:42 — Show constructive feedback.** Point to the verified behaviour, one
+improvement and its source. Do not open solo replay or the desk guide.
 
-**3:55 — Close.** “LAWFLO does not teach lawyers to trust AI. It helps a firm’s legal-AI pioneers transfer a safe, source-linked workflow to everyone who has to use it.”
+**2:55 — Close.** “LAWFLO turns the workflows built by a firm's legal AI pioneers
+into something every lawyer can watch, practise and use safely.”
 
-## Thirty-second fallback
+## Demonstration constraints
 
-1. Select **Reset demo** before the presentation.
-2. Load the synthetic pack, approve and publish.
-3. Select **Watch episode**, jump to Chapter 6, choose **Escalate to legal review**, then continue.
-4. Select **Run AI review** and point at the missed material redline.
-5. Say: “LAWFLO turns an approved legal AI workflow into an episode, a realistic rehearsal and a source-linked desk guide—so safe adoption scales beyond the original legal engineers.”
+- Rehearse to a maximum runtime of 2:55.
+- Reset and preload the prepared episode before presenting.
+- Use a desktop viewport of at least 1024 pixels and browser zoom at 100%.
+- Do not wait for a fresh Runway generation during judging.
+- Do not open source drawers, governance evidence, solo replay or the desk guide
+  unless a judge asks.
+- Describe the prepared render honestly. The product has a live Runway path, but
+  the presentation uses the output generated beforehand.
 
-## Demo discipline
+## DevPost walkthrough
 
-- Use a desktop viewport at least 1024px wide.
-- Keep the browser zoom at 100%.
-- Reset before every live run.
-- Do not depend on venue Wi-Fi after the page loads; the prototype makes no learner-triggered network or model calls.
+Use the longer recorded video to show fresh generation status, script editing,
+scene regeneration, source coverage, governance evidence, solo replay and the
+desk guide. Keep the live pitch focused on the complete learning loop.
