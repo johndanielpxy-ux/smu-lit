@@ -19,7 +19,7 @@ describe("compileApprovedUseCase", () => {
       sourceVersion: approved.sourceVersion,
       approvedBy: "Jordan Lee",
     });
-    expect(bundle.manifest.bundleId).toMatch(/^mattershift-.+-msc-[0-9a-f]{8}$/);
+    expect(bundle.manifest.bundleId).toMatch(/^lawflo-.+-msc-[0-9a-f]{8}$/);
     expect(bundle.episode.beats).toHaveLength(approved.steps.length);
     expect(bundle.episode.beats[0]).toMatchObject({
       workflowStepId: approved.steps[0].id,

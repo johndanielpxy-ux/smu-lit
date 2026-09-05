@@ -1,6 +1,6 @@
 # Technical depth plan
 
-MatterShift is not four screens. It is a small governed compilation system:
+LAWFLO is not four screens. It is a small governed compilation system:
 
 ```text
 Approved workflow + sources + guardrails

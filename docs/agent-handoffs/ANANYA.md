@@ -10,7 +10,7 @@
 ## Mission
 
 Build the small editor a legal engineer uses to turn a tested practice into an
-approved MatterShift learning object. This is a controlled form, not a general
+approved LAWFLO learning object. This is a controlled form, not a general
 AI chatbot and not a backend.
 
 ## Required component

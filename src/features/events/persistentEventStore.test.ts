@@ -96,7 +96,7 @@ describe("persistent observed-event store", () => {
 
   it("recovers safely from corrupt persisted data without inventing events", () => {
     const storage = memoryStorage();
-    storage.setItem("mattershift.observed-events.v1", "not-json");
+    storage.setItem("lawflo.observed-events.v1", "not-json");
 
     const store = createEventStore({ storage });
 
@@ -111,7 +111,7 @@ describe("persistent observed-event store", () => {
   it("rejects structurally corrupt envelopes that could duplicate event ids", () => {
     const storage = memoryStorage();
     storage.setItem(
-      "mattershift.observed-events.v1",
+      "lawflo.observed-events.v1",
       JSON.stringify({
         schemaVersion: 1,
         sequence: 1,

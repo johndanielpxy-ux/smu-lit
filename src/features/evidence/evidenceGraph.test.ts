@@ -123,7 +123,7 @@ describe("evidenceGraph", () => {
         type: "use_case_compiled",
         occurredAt: "2026-09-05T04:05:00.000Z",
         metadata: {
-          bundleId: "mattershift-an-older-approved-bundle",
+          bundleId: "lawflo-an-older-approved-bundle",
           sourceVersion: approved.sourceVersion,
         },
       },

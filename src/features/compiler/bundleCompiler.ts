@@ -143,7 +143,7 @@ export function compileApprovedUseCase(
 
   const useCase = structuredClone(approvedUseCase);
   const fingerprint = useCaseMaterialFingerprint(useCase);
-  const bundleId = `mattershift-${useCase.id}-${fingerprint}`;
+  const bundleId = `lawflo-${useCase.id}-${fingerprint}`;
   const artifactIds = {
     episode: `${bundleId}-episode`,
     rehearsal: `${bundleId}-rehearsal`,
