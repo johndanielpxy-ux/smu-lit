@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import type { MatterShiftEvent } from "../../domain/mattershift";
-import type { CompiledMatterShiftBundle } from "../compiler/bundleCompiler";
+import type { CompiledLawfloBundle } from "../compiler/bundleCompiler";
 import { buildEvidenceGraph } from "./evidenceGraph";
 
 interface EvidenceInspectorProps {
-  bundle: CompiledMatterShiftBundle;
+  bundle: CompiledLawfloBundle;
   events: MatterShiftEvent[];
   onSourceOpen?: (sourceRefId: string) => void;
 }
@@ -33,7 +33,7 @@ export function EvidenceInspector({
   const observedNodes = graph.nodes.filter((node) => node.type === "event");
   const derivedArtifactIds = new Set([
     `artifact:${bundle.episode.id}`,
-    `artifact:${bundle.activationCard.id}`,
+    `artifact:${bundle.workflowGuide.id}`,
   ]);
   const derivedEventLabels = Array.from(
     new Set(

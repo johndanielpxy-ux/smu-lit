@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { approveUseCase } from "../../domain/approval";
 import type { MatterShiftEvent } from "../../domain/mattershift";
+import { contractTrainingContent } from "../../demo/contractScenarios";
 import { demoUseCase } from "../../demo/demoUseCase";
-import { compileApprovedUseCase } from "../compiler/bundleCompiler";
+import { compileApprovedTrainingModule } from "../compiler/bundleCompiler";
 import { buildEvidenceGraph, traceEvidence } from "./evidenceGraph";
 
 const approved = approveUseCase(
@@ -10,7 +11,7 @@ const approved = approveUseCase(
   "Jordan Lee",
   "2026-09-05T04:00:00.000Z",
 );
-const bundle = compileApprovedUseCase(approved);
+const bundle = compileApprovedTrainingModule(approved, contractTrainingContent);
 
 describe("evidenceGraph", () => {
   it("links policy sources to workflow instructions and compiled artefacts", () => {
@@ -23,7 +24,7 @@ describe("evidenceGraph", () => {
         `step:${firstStep.id}`,
         ...firstStep.sourceRefIds.map((id) => `source:${id}`),
         `artifact:${bundle.episode.id}`,
-        `artifact:${bundle.activationCard.id}`,
+        `artifact:${bundle.workflowGuide.id}`,
       ]),
     );
     expect(trace.edges).toEqual(

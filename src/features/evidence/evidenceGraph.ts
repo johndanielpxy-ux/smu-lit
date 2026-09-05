@@ -1,5 +1,5 @@
 import type { MatterShiftEvent } from "../../domain/mattershift";
-import type { CompiledMatterShiftBundle } from "../compiler/bundleCompiler";
+import type { CompiledLawfloBundle } from "../compiler/bundleCompiler";
 
 export type EvidenceNodeType =
   | "source"
@@ -45,7 +45,7 @@ function edge(
 }
 
 function eventSurfaceIds(
-  bundle: CompiledMatterShiftBundle,
+  bundle: CompiledLawfloBundle,
   event: MatterShiftEvent,
 ): string[] {
   if (event.type === "use_case_compiled") {
@@ -60,7 +60,7 @@ function eventSurfaceIds(
     return [`artifact:${bundle.rehearsal.id}`];
   }
   if (event.type === "workflow_guide_opened") {
-    return [`artifact:${bundle.activationCard.id}`];
+    return [`artifact:${bundle.workflowGuide.id}`];
   }
   if (event.type === "source_opened") {
     const sourceRefId = event.metadata?.sourceRefId;
@@ -72,7 +72,7 @@ function eventSurfaceIds(
 }
 
 function isEventInBundleScope(
-  bundle: CompiledMatterShiftBundle,
+  bundle: CompiledLawfloBundle,
   event: MatterShiftEvent,
 ): boolean {
   if (
@@ -86,12 +86,12 @@ function isEventInBundleScope(
 
   return (
     event.type !== "use_case_compiled" ||
-    event.metadata.bundleId === bundle.manifest.bundleId
+    event.metadata?.bundleId === bundle.manifest.bundleId
   );
 }
 
 export function buildEvidenceGraph(
-  bundle: CompiledMatterShiftBundle,
+  bundle: CompiledLawfloBundle,
   events: MatterShiftEvent[],
 ): EvidenceGraph {
   const nodes: EvidenceNode[] = [];
@@ -125,7 +125,7 @@ export function buildEvidenceGraph(
     }
     edges.push(edge(stepId, `artifact:${bundle.episode.id}`, "compiled_into"));
     edges.push(
-      edge(stepId, `artifact:${bundle.activationCard.id}`, "compiled_into"),
+      edge(stepId, `artifact:${bundle.workflowGuide.id}`, "compiled_into"),
     );
   }
 
@@ -146,7 +146,7 @@ export function buildEvidenceGraph(
     edges.push(
       edge(
         guardrailId,
-        `artifact:${bundle.activationCard.id}`,
+        `artifact:${bundle.workflowGuide.id}`,
         "compiled_into",
       ),
     );
@@ -155,14 +155,24 @@ export function buildEvidenceGraph(
   const artifacts = [
     { id: bundle.episode.id, label: "Peer episode", detail: bundle.episode.title },
     {
+      id: bundle.aiAnalysis.id,
+      label: "Precomputed AI analysis",
+      detail: `${bundle.aiAnalysis.findings.length} unverified findings`,
+    },
+    {
       id: bundle.rehearsal.id,
       label: "Safe rehearsal",
       detail: bundle.rehearsal.title,
     },
     {
-      id: bundle.activationCard.id,
-      label: "Activation card",
-      detail: bundle.activationCard.workTrigger,
+      id: bundle.coaching.id,
+      label: "Constructive coaching",
+      detail: `${bundle.coaching.safetyCriticalDimensions.length} safety-critical dimensions`,
+    },
+    {
+      id: bundle.workflowGuide.id,
+      label: "Workflow guide",
+      detail: bundle.workflowGuide.workTrigger,
     },
   ];
   for (const artifact of artifacts) {

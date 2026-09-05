@@ -1,14 +1,12 @@
 import { useState } from "react";
+import { contractTrainingContent } from "./demo/contractScenarios";
 import { demoUseCase } from "./demo/demoUseCase";
 import { approveUseCase, isApprovalCurrent } from "./domain/approval";
 import type { MatterShiftEvent, UseCase } from "./domain/mattershift";
+import { prepareDraftFromDemoPack } from "./features/compiler/compiler";
 import {
-  compileUseCase,
-  type CompilerInput,
-} from "./features/compiler/compiler";
-import {
-  compileApprovedUseCase,
-  type CompiledMatterShiftBundle,
+  compileApprovedTrainingModule,
+  type CompiledLawfloBundle,
 } from "./features/compiler/bundleCompiler";
 import {
   getEvents,
@@ -16,6 +14,7 @@ import {
   resetDemo,
 } from "./features/events/eventStore";
 import { EvidenceInspector } from "./features/evidence/EvidenceInspector";
+import { loadSyntheticDemoPack } from "./features/studio/demoPack";
 
 type Stage = "studio" | "episode" | "rehearsal" | "activation";
 
@@ -25,18 +24,6 @@ const stages: Array<{ id: Stage; label: string; owner: string }> = [
   { id: "rehearsal", label: "Rehearsal", owner: "Krishiv" },
   { id: "activation", label: "Activation", owner: "Krishiv" },
 ];
-
-const compilerInput: CompilerInput = {
-  contributorName: demoUseCase.contributorName,
-  contributorRole: demoUseCase.contributorRole,
-  targetRole: demoUseCase.targetRole,
-  practiceGroup: demoUseCase.practiceGroup,
-  workTrigger: demoUseCase.workTrigger,
-  problem: demoUseCase.problem,
-  expectedOutcome: demoUseCase.expectedOutcome,
-  consentConfirmed: demoUseCase.consentConfirmed,
-  sourceText: demoUseCase.sources.map((source) => source.excerpt).join("\n"),
-};
 
 function StagePlaceholder({ stage }: { stage: Exclude<Stage, "studio"> }) {
   const copy = {
@@ -122,14 +109,14 @@ export function App() {
     structuredClone(demoUseCase),
   );
   const [draftPrepared, setDraftPrepared] = useState(false);
-  const [bundle, setBundle] = useState<CompiledMatterShiftBundle | null>(null);
+  const [bundle, setBundle] = useState<CompiledLawfloBundle | null>(null);
   const [events, setEvents] = useState<MatterShiftEvent[]>([]);
   const [status, setStatus] = useState("Ready to prepare governed draft");
   const approvalCurrent = isApprovalCurrent(useCase);
 
   async function handlePrepare() {
     setStatus("Validating source-linked workflow…");
-    const compiled = await compileUseCase(compilerInput);
+    const compiled = await prepareDraftFromDemoPack(loadSyntheticDemoPack());
     setUseCase(compiled);
     setDraftPrepared(true);
     setBundle(null);
@@ -161,7 +148,10 @@ export function App() {
   }
 
   function handleGenerate() {
-    const compiledBundle = compileApprovedUseCase(useCase);
+    const compiledBundle = compileApprovedTrainingModule(
+      useCase,
+      contractTrainingContent,
+    );
     setBundle(compiledBundle);
     recordEvent(
       {

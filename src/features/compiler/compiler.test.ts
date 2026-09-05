@@ -1,40 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { validateUseCase } from "../../domain/mattershift";
-import { compileUseCase, type CompilerInput } from "./compiler";
+import { loadSyntheticDemoPack } from "../studio/demoPack";
+import { prepareDraftFromDemoPack } from "./compiler";
 
-const input: CompilerInput = {
-  contributorName: "Aisha Lim",
-  contributorRole: "Legal Engineer",
-  targetRole: "Corporate associates",
-  practiceGroup: "Corporate and Commercial",
-  workTrigger: "A client-team meeting ends",
-  problem: "Follow-up work is fragmented",
-  expectedOutcome: "A verified client-team update",
-  consentConfirmed: true,
-  sourceText: "Synthetic Responsible AI Policy v1.0",
-};
+describe("prepareDraftFromDemoPack", () => {
+  it("maps the complete marked pack to a fresh canonical draft", async () => {
+    const result = await prepareDraftFromDemoPack(loadSyntheticDemoPack());
 
-describe("compileUseCase", () => {
-  it("returns a valid deterministic use case using submitted context", async () => {
-    const result = await compileUseCase(input);
-
-    expect(validateUseCase(result).valid).toBe(true);
-    expect(result.contributorName).toBe("Aisha Lim");
-    expect(result.contributorRole).toBe("Legal Engineer");
-    expect(result.targetRole).toBe("Corporate associates");
-    expect(result.practiceGroup).toBe("Corporate and Commercial");
+    expect(validateUseCase(result)).toEqual({ valid: true, errors: [] });
+    expect(result.id).toBe("ai-assisted-sales-renewal-review");
     expect(result.approvalStatus).toBe("draft");
+    expect(result.approvedBy).toBeUndefined();
+    expect(result.approvalRecord).toBeUndefined();
+    expect(result.scenarioRefs).toHaveLength(2);
   });
 
-  it("rejects compilation without consent", async () => {
-    await expect(
-      compileUseCase({ ...input, consentConfirmed: false }),
-    ).rejects.toThrow("consent");
-  });
+  it("rejects arbitrary document content instead of silently mapping the fixture", async () => {
+    const pack = { ...loadSyntheticDemoPack(), contractText: "Other agreement" };
 
-  it("rejects empty required fields", async () => {
-    await expect(
-      compileUseCase({ ...input, contributorName: "" }),
-    ).rejects.toThrow("contributorName");
+    await expect(prepareDraftFromDemoPack(pack)).rejects.toThrow(
+      "not the versioned LAWFLO demonstration contract",
+    );
   });
 });

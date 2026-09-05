@@ -1,24 +1,35 @@
 import {
   isApprovalCurrent,
+  trainingScenarioFingerprint,
   useCaseMaterialFingerprint,
 } from "../../domain/approval";
 import {
   validateUseCase,
+  type AiFinding,
+  type ContractScenario,
+  type PlaybookFacts,
   type RiskLevel,
+  type Route,
+  type TrainingModuleContent,
+  type TrainingScenarioRef,
   type UseCase,
 } from "../../domain/mattershift";
+import { evaluateRoute } from "./routeEngine";
 
 export interface CompilationManifest {
-  schemaVersion: "1.0";
+  schemaVersion: "2.0";
   bundleId: string;
   useCaseId: string;
   sourceVersion: string;
+  scenarioRefs: TrainingScenarioRef[];
   approvalFingerprint: string;
   approvedBy: string;
   artifactIds: {
     episode: string;
+    aiAnalysis: string;
     rehearsal: string;
-    activationCard: string;
+    coaching: string;
+    workflowGuide: string;
   };
 }
 
@@ -40,23 +51,43 @@ export interface CompiledEpisode {
   beats: EpisodeBeat[];
 }
 
-export interface RehearsalDecision {
+export interface CompiledAiFinding extends AiFinding {
+  status: "unverified";
+  aiGenerated: true;
+}
+
+export interface CompiledAiAnalysis {
   id: string;
-  guardrailId: string;
-  label: string;
-  safe: boolean;
-  consequence: string;
+  contractVersion: string;
+  findings: CompiledAiFinding[];
+  proposedRoute: Route;
   sourceRefIds: string[];
 }
 
 export interface CompiledRehearsal {
   id: string;
   title: string;
-  trigger: string;
-  decisions: RehearsalDecision[];
+  scenario: ContractScenario;
+  requiredFindingIds: string[];
+  requiredClauseIds: string[];
+  requiredRuleIds: string[];
 }
 
-export interface ActivationStep {
+export type CoachingDimension =
+  | "ai_output_verification"
+  | "clause_comparison"
+  | "playbook_application"
+  | "risk_reasoning"
+  | "human_responsibility"
+  | "audit_completeness";
+
+export interface CoachingPlan {
+  id: string;
+  safetyCriticalDimensions: CoachingDimension[];
+  sourceRefIdsByDimension: Record<CoachingDimension, string[]>;
+}
+
+export interface WorkflowGuideStep {
   workflowStepId: string;
   title: string;
   tool: string;
@@ -64,23 +95,25 @@ export interface ActivationStep {
   sourceRefIds: string[];
 }
 
-export interface ActivationCard {
+export interface WorkflowGuide {
   id: string;
   title: string;
   workTrigger: string;
-  approvedTools: string[];
-  steps: ActivationStep[];
-  safetyChecklist: string[];
-  expectedOutcome: string;
-  outcomeMetric: string;
+  legalAiSteps: WorkflowGuideStep[];
+  verificationChecks: string[];
+  escalationConditions: string[];
+  sourceRefIds: string[];
 }
 
-export interface CompiledMatterShiftBundle {
+export interface CompiledLawfloBundle {
   manifest: CompilationManifest;
   useCase: UseCase;
+  moduleContent: TrainingModuleContent;
   episode: CompiledEpisode;
+  aiAnalysis: CompiledAiAnalysis;
   rehearsal: CompiledRehearsal;
-  activationCard: ActivationCard;
+  coaching: CoachingPlan;
+  workflowGuide: WorkflowGuide;
 }
 
 function assertUniqueIds(
@@ -96,71 +129,132 @@ function assertUniqueIds(
   }
 }
 
-function assertResolvableReferences(useCase: UseCase): void {
-  const sourceIds = new Set(useCase.sources.map((source) => source.id));
-  const references = [
-    ...useCase.steps.flatMap((step) =>
-      step.sourceRefIds.map((sourceRefId) => ({
-        owner: `Workflow step ${step.id}`,
-        sourceRefId,
-      })),
-    ),
-    ...useCase.guardrails.flatMap((guardrail) =>
-      guardrail.sourceRefIds.map((sourceRefId) => ({
-        owner: `Guardrail ${guardrail.id}`,
-        sourceRefId,
-      })),
-    ),
-  ];
+function scenariosIn(content: TrainingModuleContent): ContractScenario[] {
+  return [content.guidedScenario, content.soloReplayScenario].filter(
+    (scenario): scenario is ContractScenario => Boolean(scenario),
+  );
+}
 
-  for (const reference of references) {
-    if (!sourceIds.has(reference.sourceRefId)) {
-      throw new Error(
-        `${reference.owner} references missing source ${reference.sourceRefId}.`,
-      );
+function scenarioRefs(content: TrainingModuleContent): TrainingScenarioRef[] {
+  return scenariosIn(content).map((scenario) => ({
+    scenarioId: scenario.id,
+    mode: scenario.mode,
+    scenarioVersion: scenario.contractVersion,
+    contentFingerprint: trainingScenarioFingerprint(scenario),
+  }));
+}
+
+function assertScenarioIntegrity(useCase: UseCase, scenario: ContractScenario): void {
+  if (scenario.useCaseId !== useCase.id) {
+    throw new Error(`Scenario ${scenario.id} belongs to a different use case.`);
+  }
+  const sourceIds = new Set(useCase.sources.map((source) => source.id));
+  const clauseIds = new Set(scenario.clauses.map((clause) => clause.id));
+  assertUniqueIds(scenario.clauses, "contract clause");
+  assertUniqueIds(scenario.aiFindings, "AI finding");
+
+  for (const clause of scenario.clauses) {
+    for (const sourceRefId of clause.sourceRefIds) {
+      if (!sourceIds.has(sourceRefId)) {
+        throw new Error(`Contract clause ${clause.id} references missing source ${sourceRefId}.`);
+      }
+    }
+  }
+  for (const finding of scenario.aiFindings) {
+    if (!clauseIds.has(finding.sourceClauseId)) {
+      throw new Error(`AI finding ${finding.id} references missing clause ${finding.sourceClauseId}.`);
+    }
+    for (const sourceRefId of finding.sourceRefIds) {
+      if (!sourceIds.has(sourceRefId)) {
+        throw new Error(`AI finding ${finding.id} references missing source ${sourceRefId}.`);
+      }
     }
   }
 }
 
-export function compileApprovedUseCase(
+function assertApprovedScenarioSet(
+  useCase: UseCase,
+  content: TrainingModuleContent,
+): void {
+  const actual = scenarioRefs(content);
+  if (JSON.stringify(actual) !== JSON.stringify(useCase.scenarioRefs)) {
+    throw new Error("Training module content does not match the approved scenario set.");
+  }
+}
+
+function findingsToFacts(findings: AiFinding[]): PlaybookFacts {
+  const entries = Object.fromEntries(
+    findings.map((finding) => [finding.field, finding.proposedValue]),
+  ) as Partial<PlaybookFacts>;
+  const fields: Array<keyof PlaybookFacts> = [
+    "contractValue",
+    "templateVersion",
+    "materialRedline",
+    "personalData",
+    "governingLaw",
+  ];
+  const missing = fields.filter((field) => entries[field] === undefined);
+  if (missing.length > 0) {
+    throw new Error(`AI analysis is missing required findings: ${missing.join(", ")}.`);
+  }
+  return entries as PlaybookFacts;
+}
+
+export function compileApprovedTrainingModule(
   approvedUseCase: UseCase,
-): CompiledMatterShiftBundle {
+  moduleContent: TrainingModuleContent,
+): CompiledLawfloBundle {
   const validation = validateUseCase(approvedUseCase);
   if (!validation.valid) {
     throw new Error(`Cannot compile invalid content: ${validation.errors.join(" ")}`);
   }
-
   if (!isApprovalCurrent(approvedUseCase)) {
     throw new Error(
       "Compilation requires current human approval for this exact content and source version.",
     );
   }
 
-  assertUniqueIds(approvedUseCase.sources, "source");
-  assertUniqueIds(approvedUseCase.steps, "workflow step");
-  assertUniqueIds(approvedUseCase.guardrails, "guardrail");
-  assertResolvableReferences(approvedUseCase);
+  for (const scenario of scenariosIn(moduleContent)) {
+    assertScenarioIntegrity(approvedUseCase, scenario);
+  }
+  assertApprovedScenarioSet(approvedUseCase, moduleContent);
 
   const useCase = structuredClone(approvedUseCase);
+  const content = structuredClone(moduleContent);
+  const guided = content.guidedScenario;
   const fingerprint = useCaseMaterialFingerprint(useCase);
   const bundleId = `lawflo-${useCase.id}-${fingerprint}`;
   const artifactIds = {
     episode: `${bundleId}-episode`,
+    aiAnalysis: `${bundleId}-analysis`,
     rehearsal: `${bundleId}-rehearsal`,
-    activationCard: `${bundleId}-activation`,
+    coaching: `${bundleId}-coaching`,
+    workflowGuide: `${bundleId}-guide`,
   };
+
+  const proposedFacts = findingsToFacts(guided.aiFindings);
+  const proposedRoute = evaluateRoute({
+    useCase,
+    verifiedFacts: proposedFacts,
+    unresolvedMaterialFindingIds: [],
+  }).route;
+  const sourceRefIds = [
+    ...new Set(guided.aiFindings.flatMap((finding) => finding.sourceRefIds)),
+  ];
 
   return {
     manifest: {
-      schemaVersion: "1.0",
+      schemaVersion: "2.0",
       bundleId,
       useCaseId: useCase.id,
       sourceVersion: useCase.sourceVersion,
+      scenarioRefs: structuredClone(useCase.scenarioRefs),
       approvalFingerprint: fingerprint,
       approvedBy: useCase.approvalRecord!.approvedBy,
       artifactIds,
     },
     useCase,
+    moduleContent: content,
     episode: {
       id: artifactIds.episode,
       title: useCase.title,
@@ -176,46 +270,67 @@ export function compileApprovedUseCase(
         humanReviewRequired: step.humanReviewRequired,
       })),
     },
+    aiAnalysis: {
+      id: artifactIds.aiAnalysis,
+      contractVersion: guided.contractVersion,
+      findings: guided.aiFindings.map((finding) => ({
+        ...finding,
+        status: "unverified",
+        aiGenerated: true,
+      })),
+      proposedRoute,
+      sourceRefIds,
+    },
     rehearsal: {
       id: artifactIds.rehearsal,
       title: `Rehearse: ${useCase.title}`,
-      trigger: useCase.workTrigger,
-      decisions: useCase.guardrails.flatMap((guardrail) => [
-        {
-          id: `${artifactIds.rehearsal}-${guardrail.id}-unsafe`,
-          guardrailId: guardrail.id,
-          label: guardrail.prohibitedAction,
-          safe: false,
-          consequence: guardrail.rule,
-          sourceRefIds: [...guardrail.sourceRefIds],
-        },
-        {
-          id: `${artifactIds.rehearsal}-${guardrail.id}-safe`,
-          guardrailId: guardrail.id,
-          label: guardrail.safeAlternative,
-          safe: true,
-          consequence: `Proceed within the approved workflow: ${guardrail.rule}`,
-          sourceRefIds: [...guardrail.sourceRefIds],
-        },
-      ]),
+      scenario: guided,
+      requiredFindingIds: guided.aiFindings
+        .filter((finding) => finding.material)
+        .map((finding) => finding.id),
+      requiredClauseIds: guided.clauses
+        .filter((clause) => clause.materiallyChanged)
+        .map((clause) => clause.id),
+      requiredRuleIds: useCase.playbookRules
+        .filter((rule) => rule.route === "legal_review")
+        .map((rule) => rule.id),
     },
-    activationCard: {
-      id: artifactIds.activationCard,
-      title: useCase.title,
+    coaching: {
+      id: artifactIds.coaching,
+      safetyCriticalDimensions: [
+        "ai_output_verification",
+        "clause_comparison",
+        "playbook_application",
+        "risk_reasoning",
+        "human_responsibility",
+      ],
+      sourceRefIdsByDimension: {
+        ai_output_verification: ["ai-verification-policy"],
+        clause_comparison: ["approved-template-2026-2", "material-redline-rule"],
+        playbook_application: ["renewal-routing-playbook", "material-redline-rule"],
+        risk_reasoning: ["material-redline-rule"],
+        human_responsibility: ["human-responsibility"],
+        audit_completeness: ["renewal-routing-playbook"],
+      },
+    },
+    workflowGuide: {
+      id: artifactIds.workflowGuide,
+      title: "Your sales-renewal legal AI workflow guide",
       workTrigger: useCase.workTrigger,
-      approvedTools: [...useCase.approvedTools],
-      steps: useCase.steps.map((step) => ({
+      legalAiSteps: useCase.steps.map((step) => ({
         workflowStepId: step.id,
         title: step.title,
         tool: step.tool,
         instruction: step.instruction,
         sourceRefIds: [...step.sourceRefIds],
       })),
-      safetyChecklist: useCase.guardrails.map(
-        (guardrail) => guardrail.safeAlternative,
+      verificationChecks: useCase.aiOperations.map(
+        (operation) => operation.verificationInstruction,
       ),
-      expectedOutcome: useCase.expectedOutcome,
-      outcomeMetric: useCase.outcomeMetric,
+      escalationConditions: useCase.playbookRules
+        .filter((rule) => rule.route === "legal_review")
+        .map((rule) => rule.explanation),
+      sourceRefIds: [...new Set(useCase.steps.flatMap((step) => step.sourceRefIds))],
     },
   };
 }

@@ -1,72 +1,79 @@
 import { describe, expect, it } from "vitest";
 import { approveUseCase } from "../../domain/approval";
+import { contractTrainingContent } from "../../demo/contractScenarios";
 import { demoUseCase } from "../../demo/demoUseCase";
-import { compileApprovedUseCase } from "./bundleCompiler";
+import { compileApprovedTrainingModule } from "./bundleCompiler";
 
-describe("compileApprovedUseCase", () => {
-  it("derives all three learning artefacts from one approved use case", () => {
-    const approved = approveUseCase(
-      demoUseCase,
-      "Jordan Lee",
-      "2026-09-05T04:00:00.000Z",
-    );
+const approved = approveUseCase(
+  demoUseCase,
+  "Jordan Lee",
+  "2026-09-05T04:00:00.000Z",
+);
 
-    const bundle = compileApprovedUseCase(approved);
+describe("compileApprovedTrainingModule", () => {
+  it("derives every learning artefact from one approved module", () => {
+    const bundle = compileApprovedTrainingModule(approved, contractTrainingContent);
 
     expect(bundle.manifest).toMatchObject({
-      schemaVersion: "1.0",
+      schemaVersion: "2.0",
       useCaseId: approved.id,
       sourceVersion: approved.sourceVersion,
       approvedBy: "Jordan Lee",
+      scenarioRefs: approved.scenarioRefs,
     });
-    expect(bundle.manifest.bundleId).toMatch(/^lawflo-.+-msc-[0-9a-f]{8}$/);
-    expect(bundle.episode.beats).toHaveLength(approved.steps.length);
-    expect(bundle.episode.beats[0]).toMatchObject({
-      workflowStepId: approved.steps[0].id,
-      sourceRefIds: approved.steps[0].sourceRefIds,
-    });
-    expect(bundle.rehearsal.decisions).toHaveLength(
-      approved.guardrails.length * 2,
+    expect(Object.keys(bundle.manifest.artifactIds)).toEqual([
+      "episode",
+      "aiAnalysis",
+      "rehearsal",
+      "coaching",
+      "workflowGuide",
+    ]);
+    expect(bundle.aiAnalysis.proposedRoute).toBe("business_approval");
+    expect(bundle.aiAnalysis.findings).toContainEqual(
+      expect.objectContaining({
+        id: "guided-material-redline",
+        status: "unverified",
+        aiGenerated: true,
+        proposedValue: false,
+      }),
     );
-    expect(bundle.activationCard.steps).toHaveLength(approved.steps.length);
-    expect(bundle.activationCard.safetyChecklist).toContain(
-      approved.guardrails[0].safeAlternative,
-    );
+    expect(bundle.rehearsal.requiredClauseIds).toContain("liability");
+    expect(bundle.workflowGuide.legalAiSteps).toHaveLength(approved.steps.length);
   });
 
   it("is deterministic for identical approved content", () => {
-    const approved = approveUseCase(
-      demoUseCase,
-      "Jordan Lee",
-      "2026-09-05T04:00:00.000Z",
-    );
-
-    expect(compileApprovedUseCase(structuredClone(approved))).toEqual(
-      compileApprovedUseCase(structuredClone(approved)),
-    );
+    expect(
+      compileApprovedTrainingModule(
+        structuredClone(approved),
+        structuredClone(contractTrainingContent),
+      ),
+    ).toEqual(compileApprovedTrainingModule(approved, contractTrainingContent));
   });
 
-  it("rejects draft and stale approved content", () => {
-    expect(() => compileApprovedUseCase(demoUseCase)).toThrow("current human approval");
+  it("rejects stale approval", () => {
+    const stale = structuredClone(approved);
+    stale.steps[0].instruction = "Changed after approval";
 
-    const stale = approveUseCase(demoUseCase, "Jordan Lee");
-    stale.steps[0].instruction = "A changed instruction after approval.";
-    expect(() => compileApprovedUseCase(stale)).toThrow("current human approval");
+    expect(() =>
+      compileApprovedTrainingModule(stale, contractTrainingContent),
+    ).toThrow("current human approval");
   });
 
-  it("rejects duplicate identifiers before approval", () => {
-    const duplicate = structuredClone(demoUseCase);
-    duplicate.steps.push({ ...duplicate.steps[0] });
+  it("rejects changed scenario content even when its version is unchanged", () => {
+    const changed = structuredClone(contractTrainingContent);
+    changed.guidedScenario.aiFindings[0].proposedValue = 99_999;
 
-    expect(() => approveUseCase(duplicate, "Jordan Lee")).toThrow(
-      "Duplicate workflow step id",
+    expect(() => compileApprovedTrainingModule(approved, changed)).toThrow(
+      "does not match the approved scenario set",
     );
   });
 
-  it("rejects source references that cannot be resolved", () => {
-    const broken = structuredClone(demoUseCase);
-    broken.steps[0].sourceRefIds = ["missing-source"];
+  it("rejects an unresolved clause or source reference", () => {
+    const changed = structuredClone(contractTrainingContent);
+    changed.guidedScenario.aiFindings[0].sourceClauseId = "missing-clause";
 
-    expect(() => approveUseCase(broken, "Jordan Lee")).toThrow("missing source");
+    expect(() => compileApprovedTrainingModule(approved, changed)).toThrow(
+      "missing clause",
+    );
   });
 });

@@ -1,14 +1,16 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { approveUseCase } from "../../domain/approval";
+import { contractTrainingContent } from "../../demo/contractScenarios";
 import { demoUseCase } from "../../demo/demoUseCase";
-import { compileApprovedUseCase } from "../compiler/bundleCompiler";
+import { compileApprovedTrainingModule } from "../compiler/bundleCompiler";
 import { EvidenceInspector } from "./EvidenceInspector";
 
 describe("EvidenceInspector", () => {
   it("expands a policy excerpt before reporting that it was opened", () => {
-    const bundle = compileApprovedUseCase(
+    const bundle = compileApprovedTrainingModule(
       approveUseCase(demoUseCase, "Jordan Lee", "2026-09-05T04:00:00.000Z"),
+      contractTrainingContent,
     );
     const onSourceOpen = vi.fn();
     render(
