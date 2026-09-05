@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: lawflo
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: LAWFLO_STUDIO_TOKEN
+        sync: false
+      - key: OPENAI_TEXT_MODEL
+        value: gpt-4o-mini

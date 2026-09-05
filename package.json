@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "start": "tsx server/index.ts",
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -19,7 +20,8 @@
   "dependencies": {
     "openai": "^7.10.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "tsx": "^4.23.13"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
