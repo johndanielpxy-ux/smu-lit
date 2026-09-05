@@ -92,7 +92,7 @@ h1, h2, h3, p { text-wrap: pretty; }
 .change-impact > div { padding: 1rem; background: #fff5dc; border: 1px solid #d5b96a; border-radius: var(--radius-sm); }
 .change-impact p { margin: .4rem 0; }
 
-.catalogue { min-height: calc(100dvh - 110px); padding: clamp(2rem, 7vw, 7rem); display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(2rem, 6vw, 6rem); align-items: center; background: var(--rt-navy); color: var(--rt-white); }
+.catalogue { min-height: calc(100dvh - 76px); padding: clamp(2rem, 7vw, 7rem); display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(2rem, 6vw, 6rem); align-items: center; background: var(--rt-navy); color: var(--rt-white); }
 .catalogue section h1 { margin: 1rem 0; font: var(--text-display); letter-spacing: -.05em; }
 .catalogue section p { max-width: 55ch; color: #c6d1e0; font-size: 1.05rem; line-height: 1.65; }
 .catalogue article { min-height: 520px; padding: 2.5rem; display: flex; flex-direction: column; justify-content: flex-end; border: 1px solid #6d7d98; border-radius: var(--radius-md); background: linear-gradient(180deg, transparent 30%, rgba(5,15,32,.93)), url('./demo/assets/maya-tan.png') center 20%/cover; }
