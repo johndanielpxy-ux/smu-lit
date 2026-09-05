@@ -25,6 +25,22 @@ describe("DemoPackInput", () => {
     });
   });
 
+  it("explains which inputs leave the browser for protected generation", async () => {
+    render(<DemoPackInput onReady={vi.fn()} onEvent={vi.fn()} />);
+
+    expect(
+      screen.getByText(/four text sources are sent to the protected generation service/i),
+    ).toBeVisible();
+    expect(screen.getByText(/the portrait stays in this browser/i)).toBeVisible();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /load synthetic demo pack/i }),
+    );
+
+    expect(await screen.findAllByText(/ready · sent only for generation/i)).toHaveLength(4);
+    expect(screen.getByText(/ready · local only/i)).toBeVisible();
+  });
+
   it("revokes only replaced user-owned portrait URLs", async () => {
     Object.defineProperty(URL, "createObjectURL", {
       configurable: true,

@@ -141,7 +141,10 @@ export function DemoPackInput({ onReady, onEvent }: DemoPackInputProps) {
         <div>
           <p className="eyebrow">Legal engineer studio</p>
           <h2 id="demo-pack-title">Build from five governed inputs</h2>
-          <p>Files stay in this browser. Only the marked synthetic pack is accepted.</p>
+          <p>
+            Four text sources are sent to the protected generation service only
+            when you generate. The portrait stays in this browser.
+          </p>
         </div>
         <button type="button" className="primary-button" onClick={loadBundledPack}>
           Load synthetic demo pack
@@ -153,7 +156,7 @@ export function DemoPackInput({ onReady, onEvent }: DemoPackInputProps) {
           <label className="demo-file" key={kind}>
             <span>{labels[kind]}</span>
             <strong>{draft.filenames[kind] ?? "Not selected"}</strong>
-            <small>{draft.filenames[kind] ? "Ready · local only" : "Markdown or text · 2 MB max"}</small>
+            <small>{draft.filenames[kind] ? "Ready · sent only for generation" : "Markdown or text · 2 MB max"}</small>
             <input
               type="file"
               accept=".md,.txt,text/markdown,text/plain"
