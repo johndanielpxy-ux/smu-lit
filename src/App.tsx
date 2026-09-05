@@ -12,6 +12,7 @@ import { compileApprovedTrainingModule, type CompiledLawfloBundle } from "./feat
 import { clearPublishedBundle, loadPublishedBundle, savePublishedBundle } from "./features/compiler/bundleStorage";
 import { prepareDraftFromDemoPack } from "./features/compiler/compiler";
 import { EpisodePlayer } from "./features/episode/EpisodePlayer";
+import { preparedEpisodeMedia } from "./features/episode/episodeMedia";
 import { clearEpisode } from "./features/episode/episodeStorage";
 import { useNarration } from "./features/generation/useNarration";
 import { getEvents, recordEvent, resetDemo } from "./features/events/eventStore";
@@ -139,7 +140,7 @@ export function App({ productionStepDurationMs = 900 }: AppProps) {
     {error && <div className="platform-error" role="alert"><strong>LAWFLO paused safely.</strong><span>{error}</span><button type="button" onClick={() => setError(undefined)}>Dismiss</button></div>}
 
     {stage === "catalogue" && bundle && <main id="main-content" className="catalogue"><section><span>Ready to learn the workflow</span><h1>One episode.<br/>One matter.<br/>One safer habit.</h1><p>Watch Maya catch the AI’s missed liability redline, then work the same legal AI workflow yourself.</p><button type="button" onClick={() => journeyDispatch({ type: "GO_TO", stage: "episode" })}>Watch episode</button></section><article><span>LAWFLO INTERACTIVE STORY · S1:E1</span><h2>{bundle.episode.title}</h2><p>100 sec · Deterministic · Source-linked and human-approved</p><strong>Featuring Maya Tan</strong></article></main>}
-    {stage === "episode" && bundle && scopedReporter && <EpisodePlayer bundle={bundle} narrationUrl={narration.url} onEvent={scopedReporter} onComplete={() => journeyDispatch({ type: "EPISODE_COMPLETED" })} />}
+    {stage === "episode" && bundle && scopedReporter && <EpisodePlayer bundle={bundle} narrationUrl={narration.url} media={preparedEpisodeMedia} onEvent={scopedReporter} onComplete={() => journeyDispatch({ type: "EPISODE_COMPLETED" })} />}
     {stage === "rehearsal" && bundle && scopedReporter && <MatterWorkspace bundle={bundle} mode="guided" onEvent={scopedReporter} onComplete={finishRehearsal} />}
     {stage === "review" && review && scopedReporter && <LearningReview result={review} onRepair={() => journeyDispatch({ type: "GO_TO", stage: "rehearsal" })} onOpenGuide={() => { journeyDispatch({ type: "REVIEW_OPENED" }); journeyDispatch({ type: "OPEN_GUIDE" }); }} onOpenSource={(sourceRefId) => scopedReporter("source_opened", { sourceRefId })} />}
     {stage === "guide" && bundle && review && scopedReporter && <WorkflowGuide bundle={bundle} review={review} onEvent={scopedReporter} onStartSoloReplay={() => journeyDispatch({ type: "START_SOLO_REPLAY" })} />}

@@ -65,9 +65,10 @@ describe("LAWFLO application", () => {
     expect(screen.queryByText(/Ananya|Krishiv|Su-Ann/i)).not.toBeInTheDocument();
     await publish();
     fireEvent.click(screen.getByRole("button", { name: /watch episode/i }));
-    fireEvent.click(screen.getByRole("button", { name: /chapter 6/i }));
+    fireEvent.ended(screen.getByTitle(/prepared training episode/i));
     fireEvent.click(screen.getByRole("button", { name: /escalate to legal review/i }));
-    fireEvent.click(screen.getByRole("button", { name: /continue to rehearsal/i }));
+    fireEvent.ended(screen.getByTitle(/prepared training episode/i));
+    fireEvent.click(screen.getByRole("button", { name: /start guided rehearsal/i }));
     expect(screen.getByRole("heading", { level: 1, name: /northstar analytics sales renewal/i })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /open northstar matter/i }));
     fireEvent.click(screen.getByRole("button", { name: /run ai review/i }));
