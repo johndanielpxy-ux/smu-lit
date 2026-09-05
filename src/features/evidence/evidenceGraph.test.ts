@@ -1,0 +1,173 @@
+import { describe, expect, it } from "vitest";
+import { approveUseCase } from "../../domain/approval";
+import type { MatterShiftEvent } from "../../domain/mattershift";
+import { demoUseCase } from "../../demo/demoUseCase";
+import { compileApprovedUseCase } from "../compiler/bundleCompiler";
+import { buildEvidenceGraph, traceEvidence } from "./evidenceGraph";
+
+const approved = approveUseCase(
+  demoUseCase,
+  "Jordan Lee",
+  "2026-09-05T04:00:00.000Z",
+);
+const bundle = compileApprovedUseCase(approved);
+
+describe("evidenceGraph", () => {
+  it("links policy sources to workflow instructions and compiled artefacts", () => {
+    const graph = buildEvidenceGraph(bundle, []);
+    const firstStep = approved.steps[0];
+    const trace = traceEvidence(graph, `step:${firstStep.id}`);
+
+    expect(trace.nodes.map((node) => node.id)).toEqual(
+      expect.arrayContaining([
+        `step:${firstStep.id}`,
+        ...firstStep.sourceRefIds.map((id) => `source:${id}`),
+        `artifact:${bundle.episode.id}`,
+        `artifact:${bundle.activationCard.id}`,
+      ]),
+    );
+    expect(trace.edges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: `source:${firstStep.sourceRefIds[0]}`,
+          to: `step:${firstStep.id}`,
+          relation: "supports",
+        }),
+        expect.objectContaining({
+          from: `step:${firstStep.id}`,
+          to: `artifact:${bundle.episode.id}`,
+          relation: "compiled_into",
+        }),
+      ]),
+    );
+  });
+
+  it("makes the exact approval authorise every derived artefact", () => {
+    const graph = buildEvidenceGraph(bundle, []);
+    const approvalId = `approval:${bundle.manifest.approvalFingerprint}`;
+    const authorisations = graph.edges.filter(
+      (edge) => edge.from === approvalId && edge.relation === "authorizes",
+    );
+
+    expect(authorisations.map((edge) => edge.to)).toEqual(
+      Object.values(bundle.manifest.artifactIds).map((id) => `artifact:${id}`),
+    );
+  });
+
+  it("attaches only observed events for this use case to the relevant artefact", () => {
+    const events: MatterShiftEvent[] = [
+      {
+        id: "event-1",
+        useCaseId: approved.id,
+        type: "episode_started",
+        occurredAt: "2026-09-05T04:05:00.000Z",
+        metadata: {
+          sourceVersion: approved.sourceVersion,
+          approvalFingerprint: approved.approvalRecord!.contentFingerprint,
+        },
+      },
+      {
+        id: "event-2",
+        useCaseId: "another-use-case",
+        type: "episode_started",
+        occurredAt: "2026-09-05T04:06:00.000Z",
+        metadata: { sourceVersion: approved.sourceVersion },
+      },
+    ];
+
+    const graph = buildEvidenceGraph(bundle, events);
+
+    expect(graph.nodes.some((node) => node.id === "event:event-1")).toBe(true);
+    expect(graph.nodes.some((node) => node.id === "event:event-2")).toBe(false);
+    expect(graph.edges).toContainEqual(
+      expect.objectContaining({
+        from: `artifact:${bundle.episode.id}`,
+        to: "event:event-1",
+        relation: "observed_in",
+      }),
+    );
+  });
+
+  it("connects a completed compilation to every artefact it produced", () => {
+    const graph = buildEvidenceGraph(bundle, [
+      {
+        id: "event-compile",
+        useCaseId: approved.id,
+        type: "use_case_compiled",
+        occurredAt: "2026-09-05T04:05:00.000Z",
+        metadata: {
+          bundleId: bundle.manifest.bundleId,
+          sourceVersion: approved.sourceVersion,
+          approvalFingerprint: approved.approvalRecord!.contentFingerprint,
+        },
+      },
+    ]);
+
+    expect(
+      graph.edges
+        .filter(
+          (edge) =>
+            edge.to === "event:event-compile" && edge.relation === "observed_in",
+        )
+        .map((edge) => edge.from),
+    ).toEqual(
+      Object.values(bundle.manifest.artifactIds).map((id) => `artifact:${id}`),
+    );
+  });
+
+  it("does not attach a compilation event from a different approved bundle", () => {
+    const graph = buildEvidenceGraph(bundle, [
+      {
+        id: "event-other-bundle",
+        useCaseId: approved.id,
+        type: "use_case_compiled",
+        occurredAt: "2026-09-05T04:05:00.000Z",
+        metadata: {
+          bundleId: "mattershift-an-older-approved-bundle",
+          sourceVersion: approved.sourceVersion,
+        },
+      },
+    ]);
+
+    expect(
+      graph.nodes.some((node) => node.id === "event:event-other-bundle"),
+    ).toBe(false);
+  });
+
+  it("does not attach events observed against an older source version", () => {
+    const graph = buildEvidenceGraph(bundle, [
+      {
+        id: "event-old-version",
+        useCaseId: approved.id,
+        type: "episode_started",
+        occurredAt: "2026-09-05T04:05:00.000Z",
+        metadata: { sourceVersion: "0.9" },
+      },
+    ]);
+
+    expect(
+      graph.nodes.some((node) => node.id === "event:event-old-version"),
+    ).toBe(false);
+  });
+
+  it("does not invent an artefact link for an event without a matching surface", () => {
+    const graph = buildEvidenceGraph(bundle, [
+      {
+        id: "event-approval",
+        useCaseId: approved.id,
+        type: "human_approved",
+        occurredAt: "2026-09-05T04:05:00.000Z",
+        metadata: {
+          sourceVersion: approved.sourceVersion,
+          approvalFingerprint: approved.approvalRecord!.contentFingerprint,
+        },
+      },
+    ]);
+
+    expect(
+      graph.edges.some(
+        (edge) => edge.to === "event:event-approval" && edge.relation === "observed_in",
+      ),
+    ).toBe(false);
+  });
+});

@@ -44,8 +44,24 @@ The contract checkpoint is commit `e3f115e`, now included on `main`.
 All feature branches import:
 
 - `UseCase`, `MatterShiftEvent` and related types from `src/domain/mattershift.ts`.
+- Teammate component props and the scoped event reporter from
+  `src/domain/integration.ts`.
 - The canonical synthetic workflow from `src/demo/demoUseCase.ts`.
 - Event helpers from `src/features/events/eventStore.ts`.
+
+John's integration layer additionally exposes:
+
+- `approveUseCase()` and `isApprovalCurrent()` for exact-version human approval.
+- `compileApprovedUseCase()` for the deterministic episode, rehearsal and
+  activation-card bundle.
+- `buildEvidenceGraph()` for source → instruction → artefact → observed-event
+  lineage.
+- `createEventStore()` for persistent, idempotent prototype instrumentation.
+
+Pass the exact approved `UseCase` to `createScopedEventReporter()` when mounting
+a teammate component. The reporter adds the source version and approval
+fingerprint, preventing activity from an older workflow version being presented
+as evidence for the current bundle.
 
 Do not rename shared types or create private alternative demo data. Coordinate contract changes with John.
 

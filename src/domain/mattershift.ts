@@ -6,6 +6,13 @@ export type ApprovalStatus =
 
 export type RiskLevel = "low" | "medium" | "high";
 
+export interface ApprovalRecord {
+  approvedBy: string;
+  approvedAt: string;
+  contentFingerprint: string;
+  sourceVersion: string;
+}
+
 export interface SourceRef {
   id: string;
   title: string;
@@ -51,6 +58,7 @@ export interface UseCase {
   sourceVersion: string;
   approvalStatus: ApprovalStatus;
   approvedBy?: string;
+  approvalRecord?: ApprovalRecord;
 }
 
 export type MatterShiftEventType =
