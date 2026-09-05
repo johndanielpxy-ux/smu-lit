@@ -10,6 +10,7 @@ import {
   recordEvent,
   resetDemo,
 } from "./features/events/eventStore";
+import { EpisodePlayer } from "./features/episode";
 
 type Stage = "studio" | "episode" | "rehearsal" | "activation";
 
@@ -32,14 +33,8 @@ const compilerInput: CompilerInput = {
   sourceText: demoUseCase.sources.map((source) => source.excerpt).join("\n"),
 };
 
-function StagePlaceholder({ stage }: { stage: Exclude<Stage, "studio"> }) {
+function StagePlaceholder({ stage }: { stage: "rehearsal" | "activation" }) {
   const copy = {
-    episode: {
-      eyebrow: "Cinematic learning",
-      title: "A legal engineer makes the new workflow believable.",
-      description:
-        "This mounting point accepts the approved UseCase, records episode events and hands the learner into rehearsal.",
-    },
     rehearsal: {
       eyebrow: "Safe practice",
       title: "Make the risky choice here, not on a client matter.",
@@ -75,7 +70,7 @@ function EventLedger({ events }: { events: MatterShiftEvent[] }) {
           <p className="eyebrow">Evidence, not theatre</p>
           <h2 id="ledger-title">Observed event ledger</h2>
         </div>
-        <span className="count">{events.length}</span>
+        <span className="count" data-testid="event-count">{events.length}</span>
       </div>
 
       {events.length === 0 ? (
@@ -135,6 +130,23 @@ export function App() {
     setStatus("Ready to compile");
   }
 
+  function handleEpisodeEvent(
+    eventData: Omit<MatterShiftEvent, "id" | "occurredAt">,
+  ) {
+    recordEvent(eventData);
+    setEvents(getEvents(useCase.id));
+  }
+
+  function handleEpisodeComplete() {
+    recordEvent({
+      useCaseId: useCase.id,
+      type: "rehearsal_passed",
+      metadata: { source: "episode_completed" },
+    });
+    setEvents(getEvents(useCase.id));
+    setActiveStage("rehearsal");
+  }
+
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -187,6 +199,7 @@ export function App() {
               type="button"
               onClick={() => setActiveStage(stage.id)}
               aria-pressed={activeStage === stage.id}
+              data-testid={`nav-stage-${stage.id}`}
             >
               <span>{String(index + 1).padStart(2, "0")}</span>
               <strong>{stage.label}</strong>
@@ -197,7 +210,7 @@ export function App() {
 
         <div className="workspace-grid">
           <div className="workspace">
-            {activeStage === "studio" ? (
+            {activeStage === "studio" && (
               <section className="studio" aria-labelledby="studio-title">
                 <div className="section-heading">
                   <div>
@@ -208,6 +221,7 @@ export function App() {
                     className="primary-button"
                     type="button"
                     onClick={handleCompile}
+                    data-testid="compile-workflow-btn"
                   >
                     Compile workflow
                   </button>
@@ -257,7 +271,17 @@ export function App() {
                   ))}
                 </div>
               </section>
-            ) : (
+            )}
+
+            {activeStage === "episode" && (
+              <EpisodePlayer
+                useCase={useCase}
+                onEvent={handleEpisodeEvent}
+                onComplete={handleEpisodeComplete}
+              />
+            )}
+
+            {(activeStage === "rehearsal" || activeStage === "activation") && (
               <StagePlaceholder stage={activeStage} />
             )}
           </div>
