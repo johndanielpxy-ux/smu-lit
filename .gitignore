@@ -13,3 +13,6 @@ vite.config.d.ts
 # own gstack installation, so machine-specific symlinks stay untracked.
 .agents/skills/*
 !.agents/skills/.gitkeep
+.gstack/
+playwright-report/
+test-results/
