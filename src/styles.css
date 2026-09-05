@@ -199,14 +199,15 @@ h1, h2, h3, p { text-wrap: pretty; }
 }
 .entry__brand strong { letter-spacing: .12em; }
 .entry__hero {
-  width: min(920px, calc(100% - 3rem));
+  width: min(1180px, calc(100% - 3rem));
   min-height: calc(100dvh - 150px);
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, .72fr);
+  gap: clamp(3rem, 8vw, 8rem);
+  align-items: center;
 }
+.entry__invitation { min-width: 0; }
 .entry__eyebrow {
   margin: 0 0 1.25rem;
   color: var(--rt-accent-dark);
@@ -226,13 +227,21 @@ h1, h2, h3, p { text-wrap: pretty; }
   letter-spacing: -.045em;
   text-wrap: balance;
 }
-.entry__hero > p:not(.entry__eyebrow) {
+.entry__invitation > p:not(.entry__eyebrow) {
   max-width: 52ch;
   margin: 1.5rem 0 2.2rem;
   color: var(--color-text-muted);
   font-size: 1.1rem;
   line-height: 1.65;
 }
+.entry__journey { color: var(--rt-white); background: var(--rt-navy); border-top: 4px solid var(--rt-accent); padding: clamp(1.5rem, 3vw, 2.5rem); }
+.entry__journey > p { margin: 0 0 1rem; color: #b8c4d6; font: var(--text-label); letter-spacing: .08em; text-transform: uppercase; }
+.entry__journey ol { margin: 0; padding: 0; list-style: none; }
+.entry__journey li { min-height: 96px; display: grid; grid-template-columns: 2.5rem 1fr; gap: 1rem; align-items: center; border-top: 1px solid #ffffff24; }
+.entry__journey li > span { color: #ec9c68; font: var(--text-label); }
+.entry__journey li div { display: grid; gap: .3rem; }
+.entry__journey strong { font-size: 1.05rem; }
+.entry__journey small { max-width: 34ch; color: #b8c4d6; line-height: 1.45; }
 .entry__actions { display: flex; align-items: center; gap: 1.25rem; }
 .entry__primary {
   min-height: 48px;
@@ -326,4 +335,6 @@ h1, h2, h3, p { text-wrap: pretty; }
   .preview-screen__player { grid-template-columns: 1fr; }
   .preview-screen__player ol { border-left: 0; }
   .entry__nav > span { display: none; }
+  .entry__hero { width: min(100% - 3rem, 560px); grid-template-columns: 1fr; gap: 2rem; padding: 3rem 0 5rem; }
+  .entry__journey { display: none; }
 }
