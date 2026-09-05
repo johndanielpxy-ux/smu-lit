@@ -725,7 +725,12 @@ export interface EpisodeCue {
 }
 ```
 
-Use a 90-120 second deterministic motion-comic timeline. Do not require audio, video generation or speech APIs.
+Use the same typed timeline for both generated and fallback media. Produce a
+source-linked script and custom shot list, render at least one real 15-second
+720p cinematic chapter through a server-side Runway adapter, and generate its
+exact approved narration through OpenAI TTS. Keep the 90-120 second deterministic
+motion-comic timeline as the offline and provider-failure fallback so the demo
+does not depend on network generation.
 
 - [ ] **Step 3: Write reducer tests for playback and checkpoint enforcement**
 
@@ -759,6 +764,15 @@ Test the opening title, captions on by default, play/pause, chapter progress, bl
 - [ ] **Step 7: Implement the cinematic player**
 
 Render the contributor portrait, `S1:E1` framing, contract overlays, semantic-diff visuals, chapter rail and transcript/source drawer. The checkpoint replaces the visual stage while active. Under reduced motion, switch cues without transforms or autoplay animation.
+
+- [ ] **Step 7A: Add the approved-media production path**
+
+Add server-side, provider-neutral routes for module compilation, Runway chapter
+rendering, task-status polling and OpenAI voiceover. The studio must show the
+script, three-to-five-shot storyboard, cited sources and estimated credit spend
+before approval. Store no provider secret in the Vite client. Pre-generate and
+cache the real chapter before the live demo; label generated, cached and fallback
+media truthfully.
 
 - [ ] **Step 8: Verify and commit**
 

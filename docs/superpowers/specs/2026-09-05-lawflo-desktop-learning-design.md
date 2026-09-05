@@ -194,8 +194,12 @@ never as working content.
 
 ### 5.4 Interactive episode
 
-The episode is a deterministic motion-comic player generated from the approved
-workflow. It includes:
+The episode is a Neuroflix-inspired cinematic workplace story generated from the
+approved workflow manifest. OpenAI produces the source-linked script, shot list,
+checkpoint and exact narration. Runway renders approved multi-shot visuals with
+generated speech disabled; OpenAI TTS supplies the approved voiceover. A
+deterministic motion-comic remains the offline and provider-failure fallback. It
+includes:
 
 - contributor-led visual framing;
 - chapter titles and progress;
@@ -205,6 +209,12 @@ workflow. It includes:
 - a checkpoint in which a low-value agreement contains a material non-standard
   clause and therefore still requires legal escalation;
 - a direct handoff into practice.
+
+The legal engineer reviews the script, storyboard, sources and source fingerprint
+before video credits are spent. A source change invalidates approval and marks
+only affected scenes for regeneration. The video provider receives approved
+visual prompts and consented references, never the underlying contract or
+playbook.
 
 The learner cannot seek beyond an unanswered checkpoint. A wrong answer shows
 the relevant policy explanation and allows another attempt. Episode completion
