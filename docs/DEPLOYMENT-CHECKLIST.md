@@ -19,7 +19,7 @@
 - [x] `npm run build`
 - [x] `npm run test:e2e`
 - [x] Canonical route repeated three times without failure
-- [ ] Generate and visually approve both durable Runway MP4s
+- [x] Generate and visually approve both durable Runway MP4s
 - [ ] Confirm all three Render secrets are set
 - [ ] Record the release commit: `________________`
 
@@ -30,7 +30,8 @@
 - [x] A 390×844 screen displays the intentional desktop-rehearsal boundary
 - [x] Unsafe low-value routing produces constructive correction
 - [x] There are zero uncaught page errors on the canonical route
-- [ ] Prepared Runway MP4s play through both segments in deployed Chrome
+- [x] Prepared Runway MP4s play through both segments in local release Chrome
+- [ ] Prepared Runway MP4s play through both segments on Render
 - [ ] Browser refresh resumes the published episode and Reset clears all progress
 
 ## Signed-out check
