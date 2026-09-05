@@ -27,6 +27,10 @@ import { createRehearsalState } from "./features/rehearsal/rehearsalReducer";
 import { clearRehearsal, loadRehearsal } from "./features/rehearsal/rehearsalStorage";
 import { DemoPackInput } from "./features/studio/DemoPackInput";
 import type { DemoPack } from "./features/studio/demoPack";
+import { WelcomeScreen } from "./features/platform/WelcomeScreen";
+import { RoleScreen } from "./features/platform/RoleScreen";
+import { PublishedScreen } from "./features/platform/PublishedScreen";
+import { createPlatformJourney, platformJourneyReducer } from "./features/platform/platformJourney";
 
 const emptyScope = { bundleId: "unpublished", sourceVersion: "draft", contractVersion: "draft", approvalFingerprint: "draft" };
 
@@ -51,6 +55,7 @@ export function App() {
   const [error, setError] = useState<string>();
   const [governedOpen, setGovernedOpen] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+  const [platform, platformDispatch] = useReducer(platformJourneyReducer, Boolean(restoredBundle), createPlatformJourney);
   const [journey, journeyDispatch] = useReducer(journeyReducer, restoredBundle, (restored) => {
     if (!restored) return createJourneyState(emptyScope);
     const scope = { bundleId: restored.manifest.bundleId, sourceVersion: restored.manifest.sourceVersion, contractVersion: restored.rehearsal.scenario.contractVersion, approvalFingerprint: restored.manifest.approvalFingerprint };
@@ -106,6 +111,7 @@ export function App() {
       recordEvent({ useCaseId: useCase.id, type: "module_published", metadata }, { idempotencyKey: `publish:${nextBundle.manifest.bundleId}` });
       savePublishedBundle(nextBundle); setBundle(nextBundle); setEvents(getEvents(useCase.id, useCase.sourceVersion)); setStatus("Module published");
       journeyDispatch({ type: "BUNDLE_PUBLISHED", scope: { bundleId: nextBundle.manifest.bundleId, sourceVersion: nextBundle.manifest.sourceVersion, contractVersion: nextBundle.rehearsal.scenario.contractVersion, approvalFingerprint: nextBundle.manifest.approvalFingerprint } });
+      platformDispatch({ type: "MODULE_PUBLISHED" });
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Publication failed safely."); }
   }
   function finishRehearsal() {
@@ -116,6 +122,7 @@ export function App() {
   function reset() {
     resetDemo(); clearJourney(); clearPublishedBundle(); if (bundle) { clearEpisode(bundle.manifest.bundleId); clearRehearsal(bundle.manifest.bundleId); }
     narration.clear(); setUseCase(structuredClone(demoUseCase)); setDemoPack(undefined); setDraftPrepared(false); setBundle(undefined); setReview(undefined); setEvents([]); setStatus("Load five governed inputs to begin"); setError(undefined); setGovernedOpen(false); setResetKey((value) => value + 1); journeyDispatch({ type: "RESET" });
+    platformDispatch({ type: "RESET" });
     window.setTimeout(() => studioHeading.current?.focus(), 0);
   }
 
@@ -126,6 +133,9 @@ export function App() {
   }, [bundle]);
 
   const stage = bundle ? journey.stage : "studio";
+  if (platform.stage === "welcome") return <WelcomeScreen onEnter={() => platformDispatch({ type: "ENTER" })} onBrowse={bundle ? () => platformDispatch({ type: "BROWSE_AS_LEARNER" }) : undefined} />;
+  if (platform.stage === "role") return <RoleScreen learnerAvailable={Boolean(bundle)} onBack={() => platformDispatch({ type: "BACK_TO_WELCOME" })} onSelect={(role) => platformDispatch({ type: "SELECT_ROLE", role })} />;
+  if (platform.stage === "published" && bundle) return <PublishedScreen title={bundle.episode.title} onViewAsLearner={() => platformDispatch({ type: "VIEW_AS_LEARNER" })} />;
   return <div className="platform-shell">
     <a className="skip-link" href="#main-content">Skip to content</a>
     <div className="utility-bar"><span>Legal AI learning infrastructure</span><div><span>Singapore prototype</span><span>Source-controlled</span><span>Human-approved</span></div></div>

@@ -5,11 +5,19 @@ import { resetDemo } from "./features/events/eventStore";
 
 beforeEach(() => { vi.unstubAllGlobals(); resetDemo(); window.localStorage.clear(); });
 
+function enterStudio() {
+  fireEvent.click(screen.getByRole("button", { name: /enter lawflo/i }));
+  fireEvent.click(screen.getByRole("button", { name: /legal engineer/i }));
+}
+
 async function publish() {
+  if (screen.queryByRole("button", { name: /enter lawflo/i })) enterStudio();
   fireEvent.click(screen.getByRole("button", { name: /load synthetic demo pack/i }));
   expect(await screen.findByText(/draft ready for named approval/i)).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: /approve exact version/i }));
   fireEvent.click(screen.getByRole("button", { name: /publish learning module/i }));
+  expect(screen.getByRole("heading", { name: /your episode is ready for learners/i })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: /view as learner/i }));
   expect(screen.getByText(/ready to learn the workflow/i)).toBeVisible();
 }
 
@@ -21,11 +29,17 @@ function verifyFinding(label: string, clauseLabel: RegExp, value: string) {
 }
 
 describe("LAWFLO application", () => {
-  it("presents the institutional learning safeguards before the studio", () => {
+  it("opens with one clear action before asking the user to choose a role", () => {
     render(<App />);
-    expect(screen.getByText(/legal ai learning infrastructure/i)).toBeVisible();
-    expect(screen.getByRole("complementary", { name: /platform safeguards/i })).toHaveTextContent(/approved workflow sources/i);
-    expect(screen.getByRole("contentinfo")).toHaveTextContent(/synthetic training matter/i);
+    expect(screen.getByRole("heading", { name: /turn firm knowledge into safer practice/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: /enter lawflo/i })).toBeVisible();
+    expect(screen.queryByText(/approved workflow sources/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /publish learning module/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /enter lawflo/i }));
+    expect(screen.getByRole("heading", { name: /how will you use lawflo today/i })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /legal engineer/i }));
+    expect(screen.getByText(/legal engineer studio/i)).toBeVisible();
   });
 
   it("treats a generated episode as a new draft that requires fresh approval", async () => {
@@ -50,6 +64,7 @@ describe("LAWFLO application", () => {
     };
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ draft: generated })));
     render(<App />);
+    enterStudio();
     fireEvent.click(screen.getByRole("button", { name: /load synthetic demo pack/i }));
     expect(await screen.findByText(/draft ready for named approval/i)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /approve exact version/i }));
@@ -91,11 +106,12 @@ describe("LAWFLO application", () => {
 
   it("enforces approval before publication and fully resets", async () => {
     render(<App />);
+    enterStudio();
     expect(screen.getByRole("button", { name: /publish learning module/i })).toBeDisabled();
     await publish();
     fireEvent.click(screen.getByRole("button", { name: /reset demo/i }));
-    expect(screen.getByRole("heading", { name: /turn legal ai pioneers into everyday practice/i })).toBeVisible();
-    expect(screen.getByRole("button", { name: /publish learning module/i })).toBeDisabled();
+    expect(screen.getByRole("heading", { name: /turn firm knowledge into safer practice/i })).toBeVisible();
+    expect(screen.queryByRole("button", { name: /publish learning module/i })).not.toBeInTheDocument();
   });
 
   it("keeps governance evidence inspectable but subordinate", async () => {
@@ -114,6 +130,8 @@ describe("LAWFLO application", () => {
     first.unmount();
 
     render(<App />);
+    expect(screen.getByRole("button", { name: /explore learner training/i })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /explore learner training/i }));
     expect(screen.getByRole("heading", { name: /ai-assisted contract review/i })).toBeVisible();
     expect(screen.getByRole("button", { name: /reset demo/i })).toBeVisible();
   });
