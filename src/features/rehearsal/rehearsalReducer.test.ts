@@ -24,13 +24,16 @@ describe("rehearsalReducer", () => {
     let state = createRehearsalState("guided");
     state = reduce(state, { type: "OPEN_INPUT" });
     state = reduce(state, { type: "RUN_AI_REVIEW" });
-    for (const finding of bundle.rehearsal.scenario.aiFindings) state = reduce(state, { type: "CONFIRM_FINDING", findingId: finding.id });
+    for (const finding of bundle.rehearsal.scenario.aiFindings) {
+      state = reduce(state, { type: "OPEN_CLAUSE", clauseId: finding.sourceClauseId });
+      state = reduce(state, { type: "SUBMIT_FINDING_VALUE", findingId: finding.id, value: finding.proposedValue });
+    }
     state = reduce(state, { type: "OPEN_CLAUSE", clauseId: "liability" });
     state = reduce(state, { type: "OPEN_RULE", ruleId: "material-redline-review" });
     state = reduce(state, { type: "SELECT_ROUTE", route: "business_approval" });
     state = reduce(state, { type: "SUBMIT_ROUTE" });
     expect(state.repairTask).toBe("verify_findings");
-    expect(state.routeDecision?.route).toBe("business_approval");
+    expect(state.routeDecision?.route).toBe("legal_review");
   });
 
   it("completes only after correcting the finding and opening the clause and matched rule", () => {
@@ -38,14 +41,13 @@ describe("rehearsalReducer", () => {
     state = reduce(state, { type: "OPEN_INPUT" });
     state = reduce(state, { type: "RUN_AI_REVIEW" });
     for (const finding of bundle.rehearsal.scenario.aiFindings) {
-      state = reduce(state, finding.id === "guided-material-redline" ? { type: "CORRECT_FINDING", findingId: finding.id } : { type: "CONFIRM_FINDING", findingId: finding.id });
+      state = reduce(state, { type: "OPEN_CLAUSE", clauseId: finding.sourceClauseId });
+      state = reduce(state, { type: "SUBMIT_FINDING_VALUE", findingId: finding.id, value: finding.verifiedValue });
     }
-    state = reduce(state, { type: "SELECT_ROUTE", route: "legal_review" });
-    state = reduce(state, { type: "SUBMIT_ROUTE" });
-    expect(state.repairTask).toBe("compare_clauses");
     state = reduce(state, { type: "OPEN_CLAUSE", clauseId: "liability" });
     state = reduce(state, { type: "OPEN_RULE", ruleId: "material-redline-review" });
-    state = reduce(state, { type: "COMPLETE_REPAIR" });
+    state = reduce(state, { type: "SELECT_ROUTE", route: "legal_review" });
+    state = reduce(state, { type: "SET_ROUTE_RATIONALE", rationale: "The liability cap was removed, so the material-redline rule requires legal review." });
     state = reduce(state, { type: "SUBMIT_ROUTE" });
     expect(state.task).toBe("inspect_audit");
     state = reduce(state, { type: "OPEN_AUDIT" });
@@ -55,5 +57,35 @@ describe("rehearsalReducer", () => {
   it("applies the same safety invariant in solo mode", () => {
     const state = rehearsalReducer(createRehearsalState("solo"), { type: "SELECT_ROUTE", route: "business_approval" }, bundle);
     expect(rehearsalReducer(state, { type: "SUBMIT_ROUTE" }, bundle).task).not.toBe("complete");
+  });
+
+  it("requires the learner to open the source clause before submitting a verified value", () => {
+    let state = createRehearsalState("guided");
+    state = reduce(state, { type: "SUBMIT_FINDING_VALUE", findingId: "guided-material-redline", value: true });
+    expect(state.findingResolutions["guided-material-redline"]).toBeUndefined();
+    expect(state.trace.at(-1)).toMatchObject({ action: "finding_value_blocked", safe: false });
+  });
+
+  it("rejects an incorrect learner value without storing or revealing the verified answer", () => {
+    let state = createRehearsalState("guided");
+    state = reduce(state, { type: "OPEN_CLAUSE", clauseId: "liability" });
+    state = reduce(state, { type: "SUBMIT_FINDING_VALUE", findingId: "guided-material-redline", value: false });
+    expect(state.findingResolutions["guided-material-redline"]).toBeUndefined();
+    expect(state.trace.at(-1)).toMatchObject({ action: "finding_value_rejected", safe: false });
+  });
+
+  it("requires a meaningful learner rationale before accepting the route", () => {
+    let state = createRehearsalState("guided");
+    for (const finding of bundle.rehearsal.scenario.aiFindings) {
+      state = reduce(state, { type: "OPEN_CLAUSE", clauseId: finding.sourceClauseId });
+      state = reduce(state, { type: "SUBMIT_FINDING_VALUE", findingId: finding.id, value: finding.verifiedValue });
+    }
+    state = reduce(state, { type: "OPEN_RULE", ruleId: "material-redline-review" });
+    state = reduce(state, { type: "SELECT_ROUTE", route: "legal_review" });
+    state = reduce(state, { type: "SUBMIT_ROUTE" });
+    expect(state.repairTask).toBe("choose_route");
+    state = reduce(state, { type: "SET_ROUTE_RATIONALE", rationale: "The liability cap was removed, so legal review is required under the material-redline rule." });
+    state = reduce(state, { type: "SUBMIT_ROUTE" });
+    expect(state.task).toBe("inspect_audit");
   });
 });

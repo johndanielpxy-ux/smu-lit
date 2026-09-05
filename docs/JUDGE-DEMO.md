@@ -6,13 +6,13 @@
 
 **0:25 — Build from governed inputs.** Select **Load synthetic demo pack**. Point out the workflow, legal playbook, approved template, submitted renewal and fictional contributor portrait. Say that every file stays in the browser. Select **Approve exact version**, then **Publish learning module**.
 
-**0:55 — Peer-led episode.** Select **Watch episode**. Open **Sources** briefly, then close it. Jump to Chapter 6: LAWFLO stops at the decision checkpoint. Select **Send to business approval** first to show the safe correction, then **Escalate to legal review** and **Continue to rehearsal**.
+**0:55 — Peer-led interactive story.** Select **Watch episode**. Point out the visible deterministic-fallback label: this prototype has an interactive, timed story rather than pretending that static scenes are generated video. Open **Sources** briefly, then close it. Jump to Chapter 6: LAWFLO stops at the decision checkpoint. Select **Send to business approval** first to show the safe correction, then **Escalate to legal review** and **Continue to rehearsal**.
 
 **1:35 — Simulated legal AI matter.** Select **Open Northstar matter** and **Run AI review**. Explain that the AI correctly extracted the SGD 42,000 value and template version but missed an unlimited-liability redline.
 
-**2:00 — Verify, don’t trust.** Confirm the four accurate findings. Correct **Material standard-term change**, then compare **Limitation of liability**. Open **Material standard-term changes require legal review** in the playbook.
+**2:00 — Verify, don’t trust.** Open each finding, compare its supporting clause and enter the value you can actually verify. LAWFLO does not show the answer first. For **Material standard-term change**, compare **Limitation of liability** and enter `true`. Open **Material standard-term changes require legal review** in the playbook.
 
-**2:45 — Human-controlled route.** Choose **Legal review**, submit the route and inspect the audit trail. The review explains what the learner handled independently and what was repaired; it never labels the person as pass/fail.
+**2:45 — Human-controlled route.** Choose **Legal review**, write a short rationale naming the removed liability cap and the material-redline rule, submit the route and inspect the audit trail. The review explains what the learner handled independently and what was repaired; it never labels the person as pass/fail.
 
 **3:20 — Keep it at the desk.** Open the workflow guide. Show the legal-AI sequence, verification checks, escalation conditions and source desk. Open **How this is governed** to reveal the clause → AI finding → human correction → playbook rule → route → coaching evidence chain.
 

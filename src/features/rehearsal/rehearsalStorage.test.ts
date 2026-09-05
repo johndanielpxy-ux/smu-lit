@@ -26,4 +26,10 @@ describe("rehearsal storage", () => {
     clearRehearsal(scope.bundleId, storage);
     expect(storage.values.size).toBe(0);
   });
+
+  it("does not resume progress created by the answer-revealing v1 state machine", () => {
+    const storage = memoryStorage();
+    storage.values.set("lawflo.rehearsal.bundle.v1", JSON.stringify({ schemaVersion: 1, scope, state: createRehearsalState("guided") }));
+    expect(loadRehearsal(scope, storage)).toBeNull();
+  });
 });

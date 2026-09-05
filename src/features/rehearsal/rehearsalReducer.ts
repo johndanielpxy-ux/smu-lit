@@ -13,6 +13,7 @@ export interface RehearsalState {
   openedClauseIds: string[];
   openedRuleIds: string[];
   selectedRoute?: Route;
+  routeRationale: string;
   routeDecision?: RouteDecision;
   repairTask?: RehearsalTask;
   hintCounts: Partial<Record<RehearsalTask, number>>;
@@ -24,11 +25,11 @@ export type RehearsalAction =
   | { type: "OPEN_INPUT" }
   | { type: "RUN_AI_REVIEW" }
   | { type: "OPEN_FINDING"; findingId: string }
-  | { type: "CONFIRM_FINDING"; findingId: string }
-  | { type: "CORRECT_FINDING"; findingId: string }
+  | { type: "SUBMIT_FINDING_VALUE"; findingId: string; value: string | number | boolean }
   | { type: "OPEN_CLAUSE"; clauseId: string }
   | { type: "OPEN_RULE"; ruleId: string }
   | { type: "SELECT_ROUTE"; route: Route }
+  | { type: "SET_ROUTE_RATIONALE"; rationale: string }
   | { type: "SUBMIT_ROUTE" }
   | { type: "USE_HINT"; task?: RehearsalTask }
   | { type: "COMPLETE_REPAIR" }
@@ -36,7 +37,7 @@ export type RehearsalAction =
   | { type: "RESET" };
 
 export function createRehearsalState(mode: "guided" | "solo"): RehearsalState {
-  return { mode, task: "intake", findingResolutions: {}, openedClauseIds: [], openedRuleIds: [], hintCounts: {}, trace: [], sequence: 0, attempts: 0 };
+  return { mode, task: "intake", findingResolutions: {}, openedClauseIds: [], openedRuleIds: [], routeRationale: "", hintCounts: {}, trace: [], sequence: 0, attempts: 0 };
 }
 function scenarioFor(bundle: CompiledLawfloBundle, mode: RehearsalState["mode"]): ContractScenario {
   if (mode === "solo") {
@@ -58,6 +59,7 @@ function incompleteRepair(state: RehearsalState, scenario: ContractScenario, bun
   const expectedDecision = buildDecision(state, scenario, bundle);
   if (expectedDecision.matchedRuleIds.some((id) => !state.openedRuleIds.includes(id))) return "apply_playbook";
   if (state.selectedRoute !== expectedDecision.route) return "choose_route";
+  if ((state.routeRationale ?? "").trim().length < 24) return "choose_route";
   return undefined;
 }
 function buildDecision(state: RehearsalState, scenario: ContractScenario, bundle: CompiledLawfloBundle): RouteDecision {
@@ -78,23 +80,30 @@ export function rehearsalReducer(state: RehearsalState, action: RehearsalAction,
       const finding = scenario.aiFindings.find((item) => item.id === action.findingId); if (!finding) return state;
       return append(state, "finding_opened", "verify_findings", finding.sourceRefIds, true);
     }
-    case "CONFIRM_FINDING":
-    case "CORRECT_FINDING": {
+    case "SUBMIT_FINDING_VALUE": {
       const finding = scenario.aiFindings.find((item) => item.id === action.findingId); if (!finding) return state;
-      const corrected = action.type === "CORRECT_FINDING";
-      const value = corrected ? finding.verifiedValue : finding.proposedValue;
-      const safe = !finding.material || sameValue(value, finding.verifiedValue);
-      return append({ ...state, findingResolutions: { ...state.findingResolutions, [finding.id]: { status: corrected ? "corrected" : "confirmed", value } }, task: "compare_clauses" }, corrected ? "finding_corrected" : "finding_confirmed", "verify_findings", finding.sourceRefIds, safe);
+      if (!state.openedClauseIds.includes(finding.sourceClauseId)) {
+        return append(state, "finding_value_blocked", "verify_findings", finding.sourceRefIds, false);
+      }
+      if (!sameValue(action.value, finding.verifiedValue)) {
+        return append({ ...state, attempts: state.attempts + 1 }, "finding_value_rejected", "verify_findings", finding.sourceRefIds, false);
+      }
+      const corrected = !sameValue(finding.proposedValue, finding.verifiedValue);
+      const findingResolutions = { ...state.findingResolutions, [finding.id]: { status: corrected ? "corrected" as const : "confirmed" as const, value: action.value } };
+      const allResolved = scenario.aiFindings.every((item) => Boolean(findingResolutions[item.id]));
+      return append({ ...state, findingResolutions, task: allResolved ? "compare_clauses" : "verify_findings" }, corrected ? "finding_corrected" : "finding_confirmed", "verify_findings", finding.sourceRefIds, true);
     }
     case "OPEN_CLAUSE": {
       const clause = scenario.clauses.find((item) => item.id === action.clauseId); if (!clause) return state;
-      return append({ ...state, openedClauseIds: [...new Set([...state.openedClauseIds, clause.id])], task: "apply_playbook" }, "clause_opened", "compare_clauses", clause.sourceRefIds, true);
+      const nextTask = state.task === "compare_clauses" ? "apply_playbook" : state.task;
+      return append({ ...state, openedClauseIds: [...new Set([...state.openedClauseIds, clause.id])], task: nextTask }, "clause_opened", state.task === "verify_findings" ? "verify_findings" : "compare_clauses", clause.sourceRefIds, true);
     }
     case "OPEN_RULE": {
       const rule = bundle.useCase.playbookRules.find((item) => item.id === action.ruleId); if (!rule) return state;
       return append({ ...state, openedRuleIds: [...new Set([...state.openedRuleIds, rule.id])], task: "choose_route" }, "rule_opened", "apply_playbook", rule.sourceRefIds, true);
     }
     case "SELECT_ROUTE": return append({ ...state, selectedRoute: action.route, task: "choose_route" }, "route_selected", "choose_route", ["renewal-routing-playbook"], true);
+    case "SET_ROUTE_RATIONALE": return { ...state, routeRationale: action.rationale };
     case "SUBMIT_ROUTE": {
       const routeDecision = buildDecision(state, scenario, bundle);
       const repairTask = incompleteRepair(state, scenario, bundle);

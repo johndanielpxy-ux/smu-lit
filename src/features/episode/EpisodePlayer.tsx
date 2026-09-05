@@ -52,7 +52,7 @@ export function EpisodePlayer({ bundle, onEvent, onComplete }: EpisodePlayerProp
 
   return <section className="episode" aria-label="LAWFLO learning episode">
     <header className="episode__header">
-      <div><span className="episode__kicker">LAWFLO ORIGINAL · S1:E1</span><h1>{bundle.episode.title}</h1><p>With {bundle.useCase.contributorName}, {bundle.useCase.contributorRole}</p></div>
+      <div><span className="episode__kicker">LAWFLO INTERACTIVE STORY · S1:E1</span><h1>{bundle.episode.title}</h1><p>With {bundle.useCase.contributorName}, {bundle.useCase.contributorRole}</p><small className="episode__provenance">Interactive story · deterministic fallback · source-linked and human-approved</small></div>
       <div className="episode__tools">
         <button type="button" onClick={() => setCaptions((value) => !value)} aria-pressed={captions}>CC {captions ? "On" : "Off"}</button>
         <button type="button" onClick={() => setDrawer("transcript")}>Transcript</button>

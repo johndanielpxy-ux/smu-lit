@@ -132,9 +132,8 @@ export function buildEvidenceGraph(
 
   for (const finding of bundle.aiAnalysis.findings) {
     const findingId = `finding:${finding.id}`;
-    nodes.push({ id: findingId, type: "ai_finding", label: finding.label, detail: `AI proposed ${String(finding.proposedValue)}; verified value ${String(finding.verifiedValue)}.`, metadata: { material: finding.material, aiGenerated: true } });
+    nodes.push({ id: findingId, type: "ai_finding", label: finding.label, detail: `AI proposed ${String(finding.proposedValue)}. Verification is recorded only after a learner checks the linked clause.`, metadata: { material: finding.material, aiGenerated: true } });
     edges.push(edge(`clause:${finding.sourceClauseId}`, findingId, "produced"));
-    edges.push(edge(findingId, `clause:${finding.sourceClauseId}`, "verified_against"));
     edges.push(edge(`ai-operation:compare-contract-clauses`, findingId, "produced"));
   }
 
@@ -257,6 +256,10 @@ export function buildEvidenceGraph(
     if (event.type === "ai_finding_resolved" && event.metadata?.resolution === "corrected" && typeof event.metadata.findingId === "string") {
       edges.push(edge(`finding:${event.metadata.findingId}`, eventId, "corrected_by"));
       edges.push(edge(eventId, "rule:material-redline-review", "governed_by"));
+    }
+    if (event.type === "ai_finding_resolved" && typeof event.metadata?.findingId === "string") {
+      const finding = bundle.aiAnalysis.findings.find((item) => item.id === event.metadata?.findingId);
+      if (finding) edges.push(edge(eventId, `clause:${finding.sourceClauseId}`, "verified_against"));
     }
     for (const surfaceId of eventSurfaceIds(bundle, event)) {
       if (nodes.some((node) => node.id === surfaceId)) {

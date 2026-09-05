@@ -155,7 +155,7 @@ export function EvidenceInspector({
 
       <footer className="evidence-footer">
         <span>{graph.nodes.length} lineage nodes</span>
-        <span>{graph.edges.length} verified links</span>
+        <span>{graph.edges.length} lineage links</span>
         <span>{observedNodes.length} observed actions</span>
         <span>Approved by {bundle.manifest.approvedBy}</span>
       </footer>

@@ -12,6 +12,12 @@ const bundle = compileApprovedTrainingModule(
 );
 
 describe("EpisodePlayer", () => {
+  it("describes the fallback truthfully as an interactive story rather than generated video", () => {
+    render(<EpisodePlayer bundle={bundle} onEvent={vi.fn()} onComplete={vi.fn()} />);
+    expect(screen.getByText(/interactive story · deterministic fallback/i)).toBeVisible();
+    expect(screen.queryByText(/generated video/i)).not.toBeInTheDocument();
+  });
+
   it("plays a captioned episode and emits one deduplicated start event", () => {
     const onEvent = vi.fn();
     render(<EpisodePlayer bundle={bundle} onEvent={onEvent} onComplete={vi.fn()} />);

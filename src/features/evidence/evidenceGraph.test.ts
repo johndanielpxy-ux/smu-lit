@@ -14,6 +14,11 @@ const approved = approveUseCase(
 const bundle = compileApprovedTrainingModule(approved, contractTrainingContent);
 
 describe("evidenceGraph", () => {
+  it("does not claim a finding was verified before a learner resolution is observed", () => {
+    const graph = buildEvidenceGraph(bundle, []);
+    expect(graph.edges.some((edge) => edge.relation === "verified_against")).toBe(false);
+  });
+
   it("links policy sources to workflow instructions and compiled artefacts", () => {
     const graph = buildEvidenceGraph(bundle, []);
     const firstStep = approved.steps[0];
@@ -187,6 +192,7 @@ describe("evidenceGraph", () => {
     ]));
     expect(graph.edges).toEqual(expect.arrayContaining([
       expect.objectContaining({ from: "clause:liability", to: "finding:guided-material-redline", relation: "produced" }),
+      expect.objectContaining({ from: "event:event-9", to: "clause:liability", relation: "verified_against" }),
       expect.objectContaining({ from: "finding:guided-material-redline", to: "event:event-9", relation: "corrected_by" }),
       expect.objectContaining({ from: "event:event-9", to: "rule:material-redline-review", relation: "governed_by" }),
       expect.objectContaining({ from: "rule:material-redline-review", to: "route:legal_review", relation: "routed_by" }),

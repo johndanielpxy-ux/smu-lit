@@ -45,12 +45,19 @@ async function enterRehearsal(page: Page) {
 }
 
 async function verifyAllFindings(page: Page) {
-  for (const label of ["Contract value", "Template version", "Personal data processing", "Governing law"]) {
-    await page.getByRole("button", { name: `Open ${label}`, exact: true }).click();
-    await page.getByRole("button", { name: `Confirm ${label}`, exact: true }).click();
+  const findings = [
+    { label: "Contract value", clause: "Compare Commercial terms clause", value: "42000" },
+    { label: "Template version", clause: "Compare Commercial terms clause", value: "2026.2" },
+    { label: "Personal data processing", clause: "Compare Commercial terms clause", value: "false" },
+    { label: "Governing law", clause: "Compare Governing law clause", value: "Singapore" },
+    { label: "Material standard-term change", clause: "Compare liability clause", value: "true" },
+  ];
+  for (const finding of findings) {
+    await page.getByRole("button", { name: `Open ${finding.label}`, exact: true }).click();
+    await page.getByRole("button", { name: finding.clause, exact: true }).click();
+    await page.getByRole("textbox", { name: `Verified value for ${finding.label}`, exact: true }).fill(finding.value);
+    await page.getByRole("button", { name: `Submit verified value for ${finding.label}`, exact: true }).click();
   }
-  await page.getByRole("button", { name: "Open Material standard-term change", exact: true }).click();
-  await page.getByRole("button", { name: "Correct Material standard-term change", exact: true }).click();
 }
 
 async function readPublishedManifest(page: Page) {
@@ -100,6 +107,7 @@ test("golden path repairs unsafe reliance and preserves evidence locally", async
   await page.getByRole("button", { name: "Open Northstar matter" }).click();
   await page.getByRole("button", { name: "Run AI review" }).click();
   await page.getByRole("button", { name: "Choose Business approval" }).click();
+  await page.getByRole("textbox", { name: "Explain your route" }).fill("The low contract value appears to permit business approval under the shortcut rule.");
   await page.getByRole("button", { name: "Submit route" }).click();
   await expect(page.getByRole("status")).toContainText("Verify the material AI findings");
   await page.getByRole("button", { name: "Open AI verification policy source" }).click();
@@ -111,6 +119,7 @@ test("golden path repairs unsafe reliance and preserves evidence locally", async
   await page.getByRole("button", { name: /open material standard-term changes require legal review/i }).click();
   await page.getByRole("button", { name: "Check repair" }).click();
   await page.getByRole("button", { name: "Choose Legal review" }).click();
+  await page.getByRole("textbox", { name: "Explain your route" }).fill("The liability cap was removed, so the material-redline rule requires legal review.");
   await page.getByRole("button", { name: "Check repair" }).click();
   await page.getByRole("button", { name: "Submit route" }).click();
   await page.getByRole("button", { name: "Inspect audit trail" }).click();
