@@ -52,6 +52,7 @@ export function DemoPackInput({ onReady, onCreate, onEvent }: DemoPackInputProps
   const [draft, setDraft] = useState<PartialDemoPack>({ filenames: {} });
   const [error, setError] = useState<string>();
   const draftRef = useRef(draft);
+  const transferredRef = useRef(false);
 
   function replaceDraft(next: PartialDemoPack, source: "bundled" | "uploaded") {
     draftRef.current = next;
@@ -107,7 +108,7 @@ export function DemoPackInput({ onReady, onCreate, onEvent }: DemoPackInputProps
     }
   }
 
-  useEffect(() => () => releasePortraitUrl(draftRef.current.portraitUrl, draftRef.current.portraitUrlKind), []);
+  useEffect(() => () => { if (!transferredRef.current) releasePortraitUrl(draftRef.current.portraitUrl, draftRef.current.portraitUrlKind); }, []);
 
   const complete = completePack(draft);
   const readyKinds = (Object.keys(labels) as DemoPackKind[]).filter((kind) => draft.filenames[kind]);
@@ -123,8 +124,9 @@ export function DemoPackInput({ onReady, onCreate, onEvent }: DemoPackInputProps
     <div className="source-intake__or"><span>or</span></div>
     <button type="button" className="source-intake__prepared" onClick={loadPreparedPack}>Use prepared source pack</button>
     {readyKinds.length ? <ul className="source-list">{readyKinds.map((kind) => <li key={kind}><span aria-hidden="true">✓</span><div><strong>{labels[kind]}</strong><small>{draft.filenames[kind]}</small></div></li>)}</ul> : null}
-    <details className="source-settings"><summary>Source settings</summary><p>Approved text sources are sent to the protected generation service only when you generate. The portrait stays in this browser.</p><label>Upload contributor portrait<input type="file" accept="image/png,image/jpeg,image/svg+xml" aria-label="Upload contributor portrait" onChange={selectPortrait} /></label></details>
-    <footer className="source-intake__footer"><span role="status">{readyKinds.length} sources ready</span><button type="button" className="entry__primary" disabled={!complete} onClick={() => complete && onCreate(complete)}>Create episode</button></footer>
+    <section className="source-presenter" aria-labelledby="presenter-title"><div>{draft.portraitUrl ? <img src={draft.portraitUrl} alt="Selected episode presenter" /> : <span aria-hidden="true">JT</span>}<div><p className="entry__eyebrow">Episode presenter</p><h2 id="presenter-title">Choose who presents the episode.</h2><small>Use a synthetic or consented portrait. It stays in this browser.</small></div></div><label>Upload contributor portrait<input type="file" accept="image/png,image/jpeg,image/svg+xml" aria-label="Upload contributor portrait" onChange={selectPortrait} /></label></section>
+    <details className="source-settings"><summary>Source settings</summary><p>Approved text sources are sent to the protected generation service only when you generate. The portrait stays in this browser.</p></details>
+    <footer className="source-intake__footer"><span role="status">{readyKinds.length} sources ready</span><button type="button" className="entry__primary" disabled={!complete} onClick={() => { if (complete) { transferredRef.current = true; onCreate(complete); } }}>Create episode</button></footer>
     {error ? <p className="source-intake__error" role="alert">{error}</p> : null}
   </section>;
 }

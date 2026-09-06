@@ -19,6 +19,9 @@
 .episode__video-label { position: absolute; z-index: 2; top: 1.25rem; left: 1.25rem; display: grid; gap: .2rem; padding: .7rem .85rem; border: 1px solid #ffffff32; border-radius: var(--radius-sm); background: #071226c9; backdrop-filter: blur(12px); }
 .episode__video-label span { color: #ec9c68; font: var(--text-label); letter-spacing: .07em; }
 .episode__video-label strong { font-size: .86rem; }
+.episode__center-play { position: absolute; z-index: 4; left: 50%; top: 50%; width: 76px; height: 76px; display: grid; place-items: center; transform: translate(-50%, -50%); border: 1px solid #ffffff99; border-radius: 50%; color: var(--rt-white); background: #071226c9; box-shadow: 0 12px 40px #0008; backdrop-filter: blur(10px); }
+.episode__center-play:hover { background: var(--rt-accent); border-color: var(--rt-accent); }
+.episode__center-play span { margin-left: .18rem; font-size: 1.45rem; }
 .episode__portrait { width: 100%; height: 100%; max-height: 540px; object-fit: cover; object-position: center 20%; filter: saturate(.8) contrast(1.06); }
 .episode__frame { padding: clamp(2rem, 5vw, 5rem); align-self: center; }
 .episode__frame span, .episode__eyebrow { color: #ec9c68; letter-spacing: .07em; font: var(--text-label); }

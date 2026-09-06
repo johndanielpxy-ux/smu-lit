@@ -11,6 +11,7 @@ import "./episode.css";
 
 export interface EpisodePlayerProps {
   bundle: CompiledLawfloBundle;
+  portraitUrl?: string;
   narrationUrl?: string;
   media?: EpisodeMediaManifest;
   onEvent: MatterShiftEventReporter;
@@ -21,7 +22,7 @@ function scopeOf(bundle: CompiledLawfloBundle): JourneyScope {
   return { bundleId: bundle.manifest.bundleId, sourceVersion: bundle.manifest.sourceVersion, contractVersion: bundle.rehearsal.scenario.contractVersion, approvalFingerprint: bundle.manifest.approvalFingerprint };
 }
 
-export function EpisodePlayer({ bundle, narrationUrl, media, onEvent, onComplete }: EpisodePlayerProps) {
+export function EpisodePlayer({ bundle, portraitUrl, narrationUrl, media, onEvent, onComplete }: EpisodePlayerProps) {
   const timeline = useMemo(() => createEpisodeTimeline(bundle), [bundle]);
   const scope = useMemo(() => scopeOf(bundle), [bundle]);
   const [state, dispatch] = useReducer((current: ReturnType<typeof createInitialEpisodeState>, action: Parameters<typeof episodeReducer>[1]) => episodeReducer(current, action, timeline), scope, (currentScope) => loadEpisode(currentScope) ?? createInitialEpisodeState());
@@ -37,6 +38,7 @@ export function EpisodePlayer({ bundle, narrationUrl, media, onEvent, onComplete
   const hasPreparedVideo = Boolean(media && !mediaUnavailable);
   const stateCue = timeline[state.cueIndex];
   const cue = hasPreparedVideo && mediaSegmentIndex === 1 ? timeline[timeline.length - 1] : stateCue;
+  const mediaSegment = hasPreparedVideo ? media!.segments[mediaSegmentIndex] : undefined;
 
   useEffect(() => { saveEpisode(scope, state); }, [scope, state]);
   useEffect(() => {
@@ -45,6 +47,7 @@ export function EpisodePlayer({ bundle, narrationUrl, media, onEvent, onComplete
     return () => window.clearInterval(timer);
   }, [hasPreparedVideo, state.status]);
   useEffect(() => { setAudioUnavailable(false); }, [narrationUrl]);
+  useEffect(() => () => { if ("speechSynthesis" in window) window.speechSynthesis.cancel(); }, []);
 
   const reportStart = () => {
     if (started.current) return;
@@ -54,13 +57,22 @@ export function EpisodePlayer({ bundle, narrationUrl, media, onEvent, onComplete
   const play = () => {
     reportStart();
     dispatch({ type: "PLAY" });
+    if (!narrationUrl && mediaSegment && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(mediaSegment.narration);
+      utterance.rate = 1.02;
+      utterance.pitch = 0.96;
+      window.speechSynthesis.speak(utterance);
+    }
     if (hasPreparedVideo) void videoRef.current?.play().catch(() => setMediaUnavailable(true));
   };
   const pause = () => {
     dispatch({ type: "PAUSE" });
     videoRef.current?.pause();
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   };
   const handleMediaEnded = () => {
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     if (!media) return;
     if (mediaSegmentIndex === media.checkpointAfterSegment) {
       const checkpointIndex = timeline.findIndex((item) => item.checkpoint);
@@ -75,7 +87,7 @@ export function EpisodePlayer({ bundle, narrationUrl, media, onEvent, onComplete
 
   return <section id="main-content" className="episode" aria-label="LAWFLO learning episode">
     <header className="episode__header">
-      <div><span className="episode__kicker">LAWFLO INTERACTIVE STORY · S1:E1</span><h1>{bundle.episode.title}</h1><p>With {bundle.useCase.contributorName}, {bundle.useCase.contributorRole}</p><small className="episode__provenance">{hasPreparedVideo ? "Prepared demo render · AI-generated visuals · source-linked and human-approved" : "Interactive story · deterministic fallback · source-linked and human-approved"}</small>{narrationUrl && !audioUnavailable ? <div className="episode__narration"><span>AI-generated voice · approved narration</span><audio title="Approved AI narration" controls src={narrationUrl} onError={() => setAudioUnavailable(true)} /></div> : null}{audioUnavailable ? <p className="episode__audio-status" role="status">Narration unavailable. Captions remain active.</p> : null}</div>
+      <div><span className="episode__kicker">LAWFLO INTERACTIVE STORY · S1:E1</span><h1>{bundle.episode.title}</h1><p>With {bundle.useCase.contributorName}, {bundle.useCase.contributorRole}</p><small className="episode__provenance">{hasPreparedVideo ? "Prepared demo render · AI-generated visuals · narrated · source-linked" : "Interactive story · deterministic fallback · source-linked and human-approved"}</small>{narrationUrl && !audioUnavailable ? <div className="episode__narration"><span>AI-generated voice · approved narration</span><audio title="Approved AI narration" controls src={narrationUrl} onError={() => setAudioUnavailable(true)} /></div> : null}{audioUnavailable ? <p className="episode__audio-status" role="status">Narration unavailable. Captions remain active.</p> : null}</div>
       <div className="episode__tools"><button type="button" onClick={() => setCaptions((value) => !value)} aria-pressed={captions}>CC {captions ? "On" : "Off"}</button><button type="button" onClick={() => setDrawer("transcript")}>Transcript</button><button type="button" onClick={() => setDrawer("sources")}>Sources</button></div>
     </header>
 
@@ -84,8 +96,8 @@ export function EpisodePlayer({ bundle, narrationUrl, media, onEvent, onComplete
         <span className="episode__eyebrow">Decision checkpoint</span><h2>{checkpoint.prompt}</h2><p>SGD 42,000 renewal · submitted liability clause changed</p>
         <div className="episode__choices">{checkpoint.choices.map((choice) => <button key={choice.id} type="button" onClick={() => { dispatch({ type: "ANSWER", choiceId: choice.id }); if (choice.safe && hasPreparedVideo) { setMediaSegmentIndex(1); dispatch({ type: "PAUSE" }); } onEvent("checkpoint_answered", { checkpointId: checkpoint.id, choiceId: choice.id, safe: choice.safe }); }}>{choice.label}</button>)}</div>
         {state.lastAnswerSafe === false && <p className="episode__repair" role="alert">Low value never cancels a material redline. Open the clause, apply the higher-priority rule, then route to legal.</p>}
-      </div> : hasPreparedVideo ? <><video key={media!.segments[mediaSegmentIndex].id} ref={videoRef} className="episode__video" title="Prepared training episode" src={media!.segments[mediaSegmentIndex].src} playsInline preload="auto" onEnded={handleMediaEnded} onError={() => setMediaUnavailable(true)} /><div className="episode__video-label"><span>{media!.label}</span><strong>{media!.segments[mediaSegmentIndex].title}</strong></div></> : <><img className="episode__portrait" src={mayaPortrait} alt={`${bundle.useCase.contributorName}, fictional legal innovation counsel`} /><div className="episode__frame"><span>Chapter {cue.chapter} / {timeline.length}</span><h2>{cue.title}</h2><p>{cue.narration}</p></div></>}
-      {captions && state.status !== "complete" && <p className="episode__captions">{cue.caption}</p>}
+      </div> : hasPreparedVideo ? <><video key={mediaSegment!.id} ref={videoRef} className="episode__video" title="Prepared training episode" src={mediaSegment!.src} playsInline preload="auto" onEnded={handleMediaEnded} onError={() => setMediaUnavailable(true)} /><div className="episode__video-label"><span>{media!.label}</span><strong>{mediaSegment!.title}</strong></div>{state.status !== "playing" && <button type="button" className="episode__center-play" aria-label={mediaSegmentIndex === 0 ? "Play episode video" : "Continue episode video"} onClick={play}><span aria-hidden="true">▶</span></button>}</> : <><img className="episode__portrait" src={portraitUrl ?? mayaPortrait} alt={`${bundle.useCase.contributorName}, fictional legal innovation counsel`} /><div className="episode__frame"><span>Chapter {cue.chapter} / {timeline.length}</span><h2>{cue.title}</h2><p>{cue.narration}</p></div></>}
+      {captions && state.status !== "complete" && <p className="episode__captions">{mediaSegment?.caption ?? cue.caption}</p>}
     </div>
 
     {hasPreparedVideo ? <nav className="episode__segments" aria-label="Episode segments">{media!.segments.map((segment, index) => <span key={segment.id} className={index === mediaSegmentIndex ? "is-current" : index < mediaSegmentIndex ? "is-complete" : ""}>{index + 1}. {segment.title}</span>)}</nav> : <nav className="episode__chapters" aria-label="Episode chapters">{timeline.map((item, index) => <button key={item.id} type="button" className={index === state.cueIndex ? "is-current" : ""} aria-label={`Chapter ${item.chapter}: ${item.title}`} onClick={() => dispatch({ type: "SEEK", cueIndex: index })}><span>{item.chapter}</span><small>{item.title}</small></button>)}</nav>}

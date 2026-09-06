@@ -26,11 +26,10 @@ async function publish() {
   expect(screen.getByText(/ready to learn the workflow/i)).toBeVisible();
 }
 
-function verifyFinding(label: string, clauseLabel: RegExp, value: string) {
+function verifyFinding(label: string, clauseLabel: RegExp, choice: RegExp) {
   fireEvent.click(screen.getByRole("button", { name: new RegExp(`^open ${label}$`, "i") }));
   fireEvent.click(screen.getByRole("button", { name: clauseLabel }));
-  fireEvent.change(screen.getByRole("textbox", { name: new RegExp(`verified value for ${label}`, "i") }), { target: { value } });
-  fireEvent.click(screen.getByRole("button", { name: new RegExp(`submit verified value for ${label}`, "i") }));
+  fireEvent.click(screen.getByRole("button", { name: choice }));
 }
 
 describe("LAWFLO application", () => {
@@ -40,6 +39,7 @@ describe("LAWFLO application", () => {
     expect(screen.getByRole("button", { name: /enter lawflo/i })).toBeVisible();
     expect(screen.queryByText(/approved workflow sources/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /publish learning module/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/one governed learning loop/i)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /enter lawflo/i }));
     expect(screen.getByRole("heading", { name: /how will you use lawflo today/i })).toBeVisible();
@@ -72,11 +72,10 @@ describe("LAWFLO application", () => {
     expect(screen.getByRole("heading", { level: 1, name: /northstar analytics sales renewal/i })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /open northstar matter/i }));
     fireEvent.click(screen.getByRole("button", { name: /run ai review/i }));
-    verifyFinding("Material standard-term change", /compare liability clause/i, "true");
+    verifyFinding("Material standard-term change", /compare liability clause/i, /material redline detected/i);
     fireEvent.click(screen.getByRole("button", { name: /open material standard-term changes require legal review/i }));
     fireEvent.click(screen.getByRole("button", { name: /choose legal review/i }));
-    fireEvent.change(screen.getByRole("textbox", { name: /explain your route/i }), { target: { value: "The liability cap was removed, so the material-redline rule requires legal review." } });
-    fireEvent.click(screen.getByRole("button", { name: /submit route/i }));
+    fireEvent.click(screen.getByRole("button", { name: /confirm legal review route/i }));
     fireEvent.click(screen.getByRole("button", { name: /inspect audit trail/i }));
     expect(screen.getByRole("heading", { name: /your review, translated into practice/i })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /open workflow guide/i }));

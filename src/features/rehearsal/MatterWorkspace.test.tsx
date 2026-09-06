@@ -15,15 +15,13 @@ function begin() {
 }
 
 function verifyMaterialChange() {
-  verifyFinding("Material standard-term change", /compare liability clause/i, "true");
+  verifyFinding("Material standard-term change", /compare liability clause/i, /material redline detected/i);
 }
 
-function verifyFinding(label: string, clauseLabel: RegExp, value: string) {
+function verifyFinding(label: string, clauseLabel: RegExp, choice: RegExp) {
   fireEvent.click(screen.getByRole("button", { name: new RegExp(`^open ${label}$`, "i") }));
-  expect(screen.queryByText(/verified agreement value/i)).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: clauseLabel }));
-  fireEvent.change(screen.getByRole("textbox", { name: new RegExp(`verified value for ${label}`, "i") }), { target: { value } });
-  fireEvent.click(screen.getByRole("button", { name: new RegExp(`submit verified value for ${label}`, "i") }));
+  fireEvent.click(screen.getByRole("button", { name: choice }));
 }
 
 describe("MatterWorkspace", () => {
@@ -34,15 +32,16 @@ describe("MatterWorkspace", () => {
     verifyMaterialChange();
     fireEvent.click(screen.getByRole("button", { name: /open material standard-term changes require legal review/i }));
     fireEvent.click(screen.getByRole("button", { name: /choose legal review/i }));
-    fireEvent.change(screen.getByRole("textbox", { name: /explain your route/i }), { target: { value: "The liability cap was removed, so the material-redline rule requires legal review." } });
-    fireEvent.click(screen.getByRole("button", { name: /submit route/i }));
+    fireEvent.click(screen.getByRole("button", { name: /confirm legal review route/i }));
     fireEvent.click(screen.getByRole("button", { name: /inspect audit trail/i }));
-    expect(screen.getByText(/rehearsal complete/i)).toBeVisible();
+    expect(screen.getByRole("heading", { name: /rehearsal complete/i })).toBeVisible();
     expect(onComplete).toHaveBeenCalledOnce();
   });
 
   it("reveals only the controls needed for the current learning objective", () => {
     render(<MatterWorkspace bundle={bundle} mode="guided" onEvent={vi.fn()} onComplete={vi.fn()} />);
+    expect(screen.getByText(/safe sandbox/i)).toBeVisible();
+    expect(screen.getByRole("complementary", { name: /workflow coach/i })).toBeVisible();
     expect(screen.queryByRole("button", { name: /run ai review/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /choose legal review/i })).not.toBeInTheDocument();
 
@@ -65,8 +64,7 @@ describe("MatterWorkspace", () => {
     verifyMaterialChange();
     fireEvent.click(screen.getByRole("button", { name: /open material standard-term changes require legal review/i }));
     fireEvent.click(screen.getByRole("button", { name: /choose business approval/i }));
-    fireEvent.change(screen.getByRole("textbox", { name: /explain your route/i }), { target: { value: "The low contract value appears to permit business approval under the shortcut rule." } });
-    fireEvent.click(screen.getByRole("button", { name: /submit route/i }));
+    fireEvent.click(screen.getByRole("button", { name: /confirm business approval route/i }));
     expect(screen.getByRole("status")).toHaveTextContent(/choose the route produced by the verified facts/i);
     expect(screen.getByRole("button", { name: /open controlling playbook source/i })).toBeVisible();
   });
@@ -84,18 +82,17 @@ describe("MatterWorkspace", () => {
     render(<MatterWorkspace bundle={bundle} mode="guided" onEvent={vi.fn()} onComplete={vi.fn()} />);
     begin();
     fireEvent.click(screen.getByRole("button", { name: /show a focused hint/i }));
-    expect(screen.getByRole("status", { name: /focused guidance/i })).toHaveTextContent(/open one ai finding/i);
+    expect(screen.getByRole("status", { name: /focused guidance/i })).toHaveTextContent(/open the ai finding/i);
   });
 
-  it("rejects ambiguous boolean text rather than interpreting it as false", () => {
+  it("uses visible source-grounded choices instead of hidden typed answers", () => {
     render(<MatterWorkspace bundle={bundle} mode="guided" onEvent={vi.fn()} onComplete={vi.fn()} />);
     begin();
-    const findingButton = screen.getByRole("button", { name: /^open personal data processing$/i });
+    const findingButton = screen.getByRole("button", { name: /^open material standard-term change$/i });
     fireEvent.click(findingButton);
-    fireEvent.click(screen.getByRole("button", { name: /compare commercial terms clause/i }));
-    fireEvent.change(screen.getByRole("textbox", { name: /verified value for personal data processing/i }), { target: { value: "no change" } });
-    fireEvent.click(screen.getByRole("button", { name: /submit verified value for personal data processing/i }));
-    expect(screen.getByRole("alert")).toHaveTextContent(/answer remains hidden/i);
-    expect(findingButton.closest("article")).toHaveTextContent(/needs source check/i);
+    fireEvent.click(screen.getByRole("button", { name: /compare liability clause/i }));
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /no material redline/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: /material redline detected/i })).toBeVisible();
   });
 });

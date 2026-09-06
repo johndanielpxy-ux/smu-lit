@@ -95,8 +95,11 @@ h1, h2, h3, p { text-wrap: pretty; }
 .catalogue { min-height: calc(100dvh - 76px); padding: clamp(2rem, 7vw, 7rem); display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(2rem, 6vw, 6rem); align-items: center; background: var(--rt-navy); color: var(--rt-white); }
 .catalogue section h1 { margin: 1rem 0; font: var(--text-display); letter-spacing: -.05em; }
 .catalogue section p { max-width: 55ch; color: #c6d1e0; font-size: 1.05rem; line-height: 1.65; }
-.catalogue article { min-height: 520px; padding: 2.5rem; display: flex; flex-direction: column; justify-content: flex-end; border: 1px solid #6d7d98; border-radius: var(--radius-md); background: linear-gradient(180deg, transparent 30%, rgba(5,15,32,.93)), url('./demo/assets/maya-tan.png') center 20%/cover; }
-.catalogue article h2 { max-width: 15ch; margin: .7rem 0; font: 700 clamp(2rem, 4vw, 3.7rem)/1 var(--font-sans); letter-spacing: -.035em; }
+.catalogue article { min-height: 520px; overflow: hidden; display: grid; grid-template-rows: minmax(270px, 1.2fr) auto; border: 1px solid #6d7d98; border-radius: var(--radius-md); background: #12284d; }
+.catalogue article > img { width: 100%; height: 330px; min-height: 0; object-fit: cover; object-position: center 22%; }
+.catalogue article > div { padding: 1.6rem 2rem 1.8rem; }
+.catalogue article > div > span { color: #ec9c68; font: var(--text-label); letter-spacing: .07em; }
+.catalogue article h2 { max-width: 18ch; margin: .55rem 0; font: 700 clamp(1.65rem, 3vw, 2.7rem)/1 var(--font-sans); letter-spacing: -.035em; }
 .catalogue article p { color: #c6d1e0; }
 
 .governance { position: fixed; inset: 0; z-index: 50; overflow: auto; padding: 2rem clamp(1rem, 5vw, 5rem); background: rgba(7, 20, 43, .985); color: #edf1f7; }
@@ -203,11 +206,14 @@ h1, h2, h3, p { text-wrap: pretty; }
   min-height: calc(100dvh - 150px);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(360px, .72fr);
-  gap: clamp(3rem, 8vw, 8rem);
+  grid-template-columns: minmax(0, 760px);
+  justify-content: center;
+  text-align: center;
   align-items: center;
 }
 .entry__invitation { min-width: 0; }
+.entry__invitation > h1, .entry__invitation > p { margin-left: auto !important; margin-right: auto !important; }
+.entry__invitation .entry__actions { justify-content: center; }
 .entry__eyebrow {
   margin: 0 0 1.25rem;
   color: var(--rt-accent-dark);
@@ -318,10 +324,10 @@ h1, h2, h3, p { text-wrap: pretty; }
 .preview-screen__header { max-width: 1180px; margin: 0 auto 2rem; display: flex; justify-content: space-between; align-items: flex-end; gap: 2rem; }
 .preview-screen__header h1 { max-width: 18ch; font-size: clamp(2rem, 4vw, 3.5rem); }
 .preview-screen__player { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 1fr 230px; background: var(--rt-white); border: 1px solid var(--rt-line); }
-.preview-screen__frame { min-height: 500px; padding: 2rem; display: flex; align-items: flex-end; justify-content: space-between; color: var(--rt-white); background: var(--rt-navy); }
-.preview-screen__frame > div { display: grid; gap: .35rem; }
+.preview-screen__frame { position: relative; min-height: 500px; overflow: hidden; color: var(--rt-white); background: #050b16; }
+.preview-screen__frame video { width: 100%; min-height: 500px; height: 100%; display: block; object-fit: cover; }
+.preview-screen__video-copy { position: absolute; left: 1.25rem; top: 1.25rem; display: grid; gap: .35rem; padding: .75rem .9rem; border: 1px solid #ffffff33; border-radius: var(--radius-sm); background: #071226d9; backdrop-filter: blur(10px); pointer-events: none; }
 .preview-screen__frame small { color: #bdc8d8; }
-.preview-screen__play { align-self: center; margin: auto; width: 64px; height: 64px; display: grid; place-items: center; border: 1px solid #8593a9; border-radius: 50%; }
 .preview-screen__player ol { margin: 0; padding: 0; list-style: none; border-left: 1px solid var(--rt-line); }
 .preview-screen__player li { padding: 1.25rem; display: grid; gap: .35rem; border-bottom: 1px solid var(--rt-line); }
 .preview-screen__player li span { color: var(--rt-accent-dark); font: var(--text-label); }

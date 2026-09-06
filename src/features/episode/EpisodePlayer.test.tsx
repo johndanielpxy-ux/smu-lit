@@ -12,7 +12,7 @@ const bundle = compileApprovedTrainingModule(
   contractTrainingContent,
 );
 
-afterEach(() => localStorage.clear());
+afterEach(() => { localStorage.clear(); vi.unstubAllGlobals(); });
 
 describe("EpisodePlayer", () => {
   it("plays durable video segments, pauses for the checkpoint, then offers the guided rehearsal", () => {
@@ -23,7 +23,8 @@ describe("EpisodePlayer", () => {
 
     const video = screen.getByTitle(/prepared training episode/i);
     expect(video).toHaveAttribute("src", preparedEpisodeMedia.segments[0].src);
-    fireEvent.click(screen.getByRole("button", { name: /play episode/i }));
+    expect(screen.getByRole("button", { name: /play episode video/i })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /play episode video/i }));
     expect(play).toHaveBeenCalled();
 
     fireEvent.ended(video);
@@ -38,6 +39,24 @@ describe("EpisodePlayer", () => {
     expect(onComplete).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /start guided rehearsal/i }));
     expect(onComplete).toHaveBeenCalledOnce();
+  });
+
+  it("uses the uploaded contributor portrait in the learning experience", () => {
+    render(<EpisodePlayer bundle={bundle} portraitUrl="blob:custom-presenter" onEvent={vi.fn()} onComplete={vi.fn()} />);
+    expect(screen.getByRole("img", { name: /fictional legal innovation counsel/i })).toHaveAttribute("src", "blob:custom-presenter");
+  });
+
+  it("starts built-in narration with a prepared video when no generated audio is supplied", () => {
+    const speak = vi.fn();
+    const cancel = vi.fn();
+    vi.stubGlobal("speechSynthesis", { speak, cancel });
+    vi.stubGlobal("SpeechSynthesisUtterance", class { rate = 1; pitch = 1; constructor(public text: string) {} });
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    render(<EpisodePlayer bundle={bundle} media={preparedEpisodeMedia} onEvent={vi.fn()} onComplete={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /play episode video/i }));
+    expect(cancel).toHaveBeenCalled();
+    expect(speak).toHaveBeenCalledWith(expect.objectContaining({ text: expect.stringContaining("only a draft") }));
   });
 
   it("plays approved AI narration and falls back to captions when audio fails", () => {

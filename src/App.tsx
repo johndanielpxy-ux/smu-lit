@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import mayaPortrait from "./demo/assets/maya-tan.png";
 import { contractTrainingContent } from "./demo/contractScenarios";
 import { demoUseCase } from "./demo/demoUseCase";
 import { approveUseCase } from "./domain/approval";
@@ -24,7 +25,7 @@ import { MatterWorkspace } from "./features/rehearsal/MatterWorkspace";
 import { createRehearsalState } from "./features/rehearsal/rehearsalReducer";
 import { clearRehearsal, loadRehearsal } from "./features/rehearsal/rehearsalStorage";
 import { DemoPackInput } from "./features/studio/DemoPackInput";
-import type { DemoPack } from "./features/studio/demoPack";
+import { releasePortraitUrl, type DemoPack } from "./features/studio/demoPack";
 import { ProductionScreen } from "./features/studio/ProductionScreen";
 import { PreviewScreen } from "./features/studio/PreviewScreen";
 import { WelcomeScreen } from "./features/platform/WelcomeScreen";
@@ -54,7 +55,7 @@ export function App({ productionStepDurationMs = 900 }: AppProps) {
     const restored = loadRehearsal({ bundleId: restoredBundle.manifest.bundleId, sourceVersion: restoredBundle.manifest.sourceVersion, contractVersion: restoredBundle.rehearsal.scenario.contractVersion, approvalFingerprint: restoredBundle.manifest.approvalFingerprint });
     return restored?.task === "complete" ? deriveLearningReview(restored, restoredBundle.coaching) : undefined;
   });
-  const [, setDemoPack] = useState<DemoPack>();
+  const [demoPack, setDemoPack] = useState<DemoPack>();
   const [authoringStage, setAuthoringStage] = useState<"intake" | "production" | "preview">("intake");
   const [error, setError] = useState<string>();
   const [governedOpen, setGovernedOpen] = useState(false);
@@ -67,6 +68,7 @@ export function App({ productionStepDurationMs = 900 }: AppProps) {
   });
 
   useEffect(() => { if (bundle) saveJourney(journey); }, [bundle, journey]);
+  useEffect(() => () => releasePortraitUrl(demoPack?.portraitUrl, demoPack?.portraitUrlKind), [demoPack]);
 
   const refreshEvents = useCallback((target = useCase) => setEvents(getEvents(target.id, target.sourceVersion)), [useCase]);
   const prePublishReporter = useCallback<MatterShiftEventReporter>((type, metadata, options) => {
@@ -139,8 +141,8 @@ export function App({ productionStepDurationMs = 900 }: AppProps) {
     <header className="platform-header"><button className="platform-brand" type="button" onClick={() => journeyDispatch({ type: "GO_TO", stage: "catalogue" })}><span>LF</span><span className="platform-brand__wordmark">LAWFLO<small>Workflow learning for legal teams</small></span></button><nav aria-label="Learning journey">{bundle && visibleLearnerNavigation(journey).map(({ label, stage: target }) => <button key={label} type="button" aria-current={stage === target ? "page" : undefined} onClick={() => journeyDispatch({ type: "GO_TO", stage: target })}>{label}</button>)}</nav><div className="platform-actions"><button type="button" onClick={() => setGovernedOpen((value) => !value)} disabled={!bundle}>How this is governed</button><button type="button" onClick={reset}>Reset demo</button></div></header>
     {error && <div className="platform-error" role="alert"><strong>LAWFLO paused safely.</strong><span>{error}</span><button type="button" onClick={() => setError(undefined)}>Dismiss</button></div>}
 
-    {stage === "catalogue" && bundle && <main id="main-content" className="catalogue"><section><span>Ready to learn the workflow</span><h1>One episode.<br/>One matter.<br/>One safer habit.</h1><p>Watch Maya catch the AI’s missed liability redline, then work the same legal AI workflow yourself.</p><button type="button" onClick={() => journeyDispatch({ type: "GO_TO", stage: "episode" })}>Watch episode</button></section><article><span>LAWFLO INTERACTIVE STORY · S1:E1</span><h2>{bundle.episode.title}</h2><p>30 sec · Two cinematic scenes · One decision</p><strong>Featuring Maya Tan</strong></article></main>}
-    {stage === "episode" && bundle && scopedReporter && <EpisodePlayer bundle={bundle} narrationUrl={narration.url} media={preparedEpisodeMedia} onEvent={scopedReporter} onComplete={() => journeyDispatch({ type: "EPISODE_COMPLETED" })} />}
+    {stage === "catalogue" && bundle && <main id="main-content" className="catalogue"><section><span>Ready to learn the workflow</span><h1>Watch it.<br/>Try it.<br/>Use it safely.</h1><p>See a legal engineer catch an AI miss, then practise the same contract-review workflow inside a safe replica.</p><button type="button" onClick={() => journeyDispatch({ type: "GO_TO", stage: "episode" })}>Watch episode</button></section><article><img src={demoPack?.portraitUrl ?? mayaPortrait} alt={`${bundle.useCase.contributorName}, episode presenter`} /><div><span>LAWFLO INTERACTIVE STORY · S1:E1</span><h2>{bundle.episode.title}</h2><p>30 sec · Two cinematic scenes · One decision</p><strong>Featuring {bundle.useCase.contributorName}</strong></div></article></main>}
+    {stage === "episode" && bundle && scopedReporter && <EpisodePlayer bundle={bundle} portraitUrl={demoPack?.portraitUrl} narrationUrl={narration.url} media={preparedEpisodeMedia} onEvent={scopedReporter} onComplete={() => journeyDispatch({ type: "EPISODE_COMPLETED" })} />}
     {stage === "rehearsal" && bundle && scopedReporter && <MatterWorkspace bundle={bundle} mode="guided" onEvent={scopedReporter} onComplete={finishRehearsal} />}
     {stage === "review" && review && scopedReporter && <LearningReview result={review} onRepair={() => journeyDispatch({ type: "GO_TO", stage: "rehearsal" })} onOpenGuide={() => { journeyDispatch({ type: "REVIEW_OPENED" }); journeyDispatch({ type: "OPEN_GUIDE" }); }} onOpenSource={(sourceRefId) => scopedReporter("source_opened", { sourceRefId })} />}
     {stage === "guide" && bundle && review && scopedReporter && <WorkflowGuide bundle={bundle} review={review} onEvent={scopedReporter} onStartSoloReplay={() => journeyDispatch({ type: "START_SOLO_REPLAY" })} />}

@@ -32,3 +32,46 @@
 .matter__coach { margin-top: .75rem; min-height: 54px; padding: .8rem 1rem; display: flex; align-items: center; }.matter__coach [role="status"], .matter__complete { width: 100%; display: flex; align-items: center; gap: 1rem; }.matter__coach [role="status"] span { flex: 1; }.matter__coach button:not(.matter__primary) { border: 0; background: transparent; text-decoration: underline; }.matter__complete strong { color: #2d7154; }.matter__mobile { display: none; }
 @media (max-width: 1024px) and (min-width: 900px) { .matter__grid { grid-template-columns: 1fr 1fr; }.matter__rail { grid-column: 1 / -1; }.matter__grid--focused .matter__contract { grid-column: 1 / -1; }.matter__rail ol { display: flex; overflow: auto; margin: .5rem 0; }.matter__rail li { min-width: 130px; border-bottom: 0; }.matter__routing { grid-template-columns: 1fr; } }
 @media (max-width: 899px) { .matter__desktop, .matter__top { display: none; }.matter__mobile { min-height: 70vh; display: grid; place-content: center; gap: .5rem; text-align: center; max-width: 34ch; margin: auto; }.matter__mobile strong { font: 700 2rem var(--font-sans); } }
+
+/* The rehearsal is a faithful software replica with coaching beside the work. */
+.matter__top { align-items: center; }
+.matter__session { min-width: 220px; display: grid; grid-template-columns: 1fr auto; gap: .35rem 1rem; color: var(--color-text-muted); font-size: .72rem; }
+.matter__session strong { color: var(--rt-positive); letter-spacing: .08em; }
+.matter__session i { grid-column: 1 / -1; height: 4px; overflow: hidden; background: #d9ddd9; border-radius: 9px; }
+.matter__session b { display: block; height: 100%; background: var(--rt-accent); }
+.matter__simulation { min-height: 650px; display: grid; grid-template-columns: minmax(0, 3fr) minmax(260px, 1fr); gap: .8rem; }
+.matter__app { min-width: 0; overflow: hidden; border: 1px solid var(--rt-line); border-radius: var(--radius-md); background: var(--rt-white); box-shadow: 0 12px 35px rgba(11, 30, 61, .08); }
+.matter__appbar { min-height: 62px; padding: .75rem 1.1rem; display: flex; align-items: center; justify-content: space-between; color: #dbe4f1; background: var(--rt-navy); font: 600 .7rem/1.4 ui-monospace, monospace; }
+.matter__appbar div { display: grid; }
+.matter__appbar strong { color: var(--rt-white); font: 700 .92rem/1.3 var(--font-sans); }
+.matter__grid { min-height: 500px; padding: .75rem; }
+.matter__grid--focused { grid-template-columns: 1fr; }
+.matter__grid--active { grid-template-columns: minmax(360px, 1.25fr) minmax(290px, .75fr); }
+.matter__contract, .matter__ai, .matter__verification { box-shadow: none; }
+.matter__guide { min-width: 0; display: flex; flex-direction: column; gap: .8rem; }
+.matter__rail { flex: 1; }
+.matter__rail h2 { margin-top: .65rem; font-size: 1.3rem; line-height: 1.25; }
+.matter__coach-copy { margin: 1rem 0; padding: .85rem; background: var(--rt-fog); border-left: 3px solid var(--rt-accent); }
+.matter__coach-copy span { font: var(--text-label); color: var(--color-text-muted); }
+.matter__coach-copy p { margin: .35rem 0 0; line-height: 1.45; }
+.matter__hint-button { text-align: left; }
+.matter__routing { margin: 0 .75rem .75rem; grid-template-columns: 150px minmax(250px, 1fr); align-items: start; }
+.matter__rules { grid-column: 2; }
+.matter__routes { grid-column: 1 / -1; }
+.matter__route-summary, .matter__route-prompt { grid-column: 1 / -1; }
+.matter__route-summary { padding: .9rem; display: grid; grid-template-columns: 1fr auto; gap: .25rem 1rem; align-items: center; background: var(--rt-fog); border-left: 3px solid var(--rt-accent); }
+.matter__route-summary span { font: var(--text-label); color: var(--color-text-muted); }
+.matter__route-summary p { grid-column: 1; margin: 0; line-height: 1.45; }
+.matter__route-summary button { grid-column: 2; grid-row: 1 / span 2; }
+.matter__verification-choices { display: grid; gap: .55rem; }
+.matter__verification-choices > span { color: var(--color-text-muted); font-size: .78rem; font-weight: 700; }
+.matter__verification-choices button { padding: .65rem .75rem; text-align: left; border: 1px solid var(--rt-line); border-radius: var(--radius-sm); background: var(--rt-white); }
+.matter__verification-choices button.is-risk { border-left: 4px solid var(--rt-accent); }
+.matter__ai-summary { margin: 1rem 0 .6rem; color: var(--color-text-muted); font-size: .78rem; line-height: 1.45; }
+.matter__findings article { border-left: 4px solid var(--rt-accent); }
+.matter__finding-head { align-items: flex-start; flex-direction: column; gap: .35rem; }
+.matter__finding-head strong { color: var(--rt-warning); font-size: 1rem; }
+.matter__coach { margin: 0; min-height: auto; }
+.matter__coach > span, .matter__coach > button { width: 100%; }
+.matter__coach [role="status"], .matter__complete { align-items: stretch; flex-direction: column; }
+@media (max-width: 1180px) and (min-width: 900px) { .matter__simulation { grid-template-columns: minmax(0, 2.2fr) minmax(240px, .8fr); } .matter__grid--active { grid-template-columns: 1fr; } .matter__routing { grid-template-columns: 1fr; } .matter__rules { grid-column: 1; } }

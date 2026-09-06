@@ -44,6 +44,14 @@ describe("DemoPackInput", () => {
     expect(screen.getByText(/maya-tan.png/i)).toBeVisible();
   });
 
+  it("makes presenter customisation a first-class creator step", () => {
+    render(<DemoPackInput onReady={vi.fn()} onCreate={vi.fn()} onEvent={vi.fn()} />);
+
+    expect(screen.getByRole("heading", { name: /choose who presents the episode/i })).toBeVisible();
+    expect(screen.getByLabelText(/upload contributor portrait/i)).toBeVisible();
+    expect(screen.getByLabelText(/upload contributor portrait/i).closest("details")).toBeNull();
+  });
+
   it("revokes only replaced user-owned portrait URLs", async () => {
     Object.defineProperty(URL, "createObjectURL", {
       configurable: true,
@@ -71,5 +79,21 @@ describe("DemoPackInput", () => {
     await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(2));
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:portrait-one");
     expect(revokeObjectURL).not.toHaveBeenCalledWith(expect.stringMatching(/^\/src\//));
+  });
+
+  it("hands the selected portrait URL to the published journey without revoking it", async () => {
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:presenter") });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+    const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    const onCreate = vi.fn();
+    const view = render(<DemoPackInput onReady={vi.fn()} onCreate={onCreate} onEvent={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /use prepared source pack/i }));
+    fireEvent.change(screen.getByLabelText(/upload contributor portrait/i), { target: { files: [new File(["portrait"], "john.png", { type: "image/png" })] } });
+    await waitFor(() => expect(screen.getByText(/john\.png/i)).toBeVisible());
+    fireEvent.click(screen.getByRole("button", { name: /create episode/i }));
+    view.unmount();
+
+    expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ portraitUrl: "blob:presenter" }));
+    expect(revokeObjectURL).not.toHaveBeenCalledWith("blob:presenter");
   });
 });
