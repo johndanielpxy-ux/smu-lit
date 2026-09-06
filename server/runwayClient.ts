@@ -24,6 +24,15 @@ export interface RunwayRecipeClient {
       shots: RunwayVideoShot[];
     }): RunwayTask;
   };
+  textToSpeech: {
+    create(input: {
+      model: "eleven_v3"; promptText: string;
+      voice: { type: "runway-preset"; presetId: "Maya" };
+      languageCode: "en"; applyTextNormalization: "auto";
+      stability: number; similarityBoost: number; style: number; speed: number;
+      useSpeakerBoost: true; seed: number;
+    }): RunwayTask;
+  };
 }
 
 export type RunwayVideoErrorCode =
@@ -69,7 +78,7 @@ export function validateRunwayVideoInput(value: unknown): RunwayVideoInput {
   return { shots: validated };
 }
 
-export async function renderRunwayVideo(client: RunwayRecipeClient, value: unknown) {
+export async function renderRunwayVideo(client: Pick<RunwayRecipeClient, "recipes">, value: unknown) {
   const input = validateRunwayVideoInput(value);
   const output = await client.recipes.multiShotVideo({
     version: "2026-06",
@@ -84,6 +93,22 @@ export async function renderRunwayVideo(client: RunwayRecipeClient, value: unkno
   if (!outputUrl) {
     throw new RunwayVideoError("PROVIDER_OUTPUT_MISSING", "The completed render did not contain a video.");
   }
+  return { providerTaskId: output.id, outputUrl };
+}
+
+export async function renderRunwayNarration(client: Pick<RunwayRecipeClient, "textToSpeech">, input: { narration: string }) {
+  if (!input.narration.trim() || input.narration.length > 1_000) {
+    throw new RunwayVideoError("INVALID_VIDEO_REQUEST", "Narration must contain between 1 and 1000 characters.");
+  }
+  const output = await client.textToSpeech.create({
+    model: "eleven_v3", promptText: input.narration,
+    voice: { type: "runway-preset", presetId: "Maya" },
+    languageCode: "en", applyTextNormalization: "auto",
+    stability: 0.58, similarityBoost: 0.76, style: 0.18, speed: 1,
+    useSpeakerBoost: true, seed: 42000,
+  }).waitForTaskOutput();
+  const outputUrl = output.output[0];
+  if (!outputUrl) throw new RunwayVideoError("PROVIDER_OUTPUT_MISSING", "The completed narration did not contain audio.");
   return { providerTaskId: output.id, outputUrl };
 }
 

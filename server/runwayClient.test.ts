@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { RunwayVideoError, renderRunwayVideo, validateRunwayVideoInput } from "./runwayClient";
+import { RunwayVideoError, renderRunwayNarration, renderRunwayVideo, validateRunwayVideoInput } from "./runwayClient";
 
 const validInput = {
   shots: [
@@ -55,5 +55,24 @@ describe("Runway video client", () => {
     };
 
     await expect(renderRunwayVideo(client, validInput)).rejects.toMatchObject({ code: "PROVIDER_OUTPUT_MISSING" });
+  });
+});
+
+describe("Runway narration client", () => {
+  it("uses Eleven v3 with a stable natural presenter voice", async () => {
+    const waitForTaskOutput = vi.fn(async () => ({ id: "voice-task", output: ["https://provider.example/voice.mp3"] }));
+    const create = vi.fn(() => ({ waitForTaskOutput }));
+    const client = { textToSpeech: { create } };
+
+    const result = await renderRunwayNarration(client, { narration: "Maya verifies the underlying clause before relying on the AI draft." });
+
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      model: "eleven_v3",
+      promptText: "Maya verifies the underlying clause before relying on the AI draft.",
+      voice: { type: "runway-preset", presetId: "Maya" },
+      languageCode: "en",
+      seed: 42000,
+    }));
+    expect(result).toEqual({ providerTaskId: "voice-task", outputUrl: "https://provider.example/voice.mp3" });
   });
 });
