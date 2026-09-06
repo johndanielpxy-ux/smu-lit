@@ -32,13 +32,14 @@ describe("DemoPackInput", () => {
     expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ contractText: expect.any(String) }));
   });
 
-  it("explains which inputs leave the browser for protected generation", async () => {
+  it("distinguishes the local prepared path from protected live generation", async () => {
     render(<DemoPackInput onReady={vi.fn()} onCreate={vi.fn()} onEvent={vi.fn()} />);
 
-    expect(screen.getByText(/approved text sources are sent to the protected generation service/i)).not.toBeVisible();
+    expect(screen.getByText(/prepared demo validates and compiles its synthetic sources locally/i)).not.toBeVisible();
     fireEvent.click(screen.getByText(/source settings/i));
-    expect(screen.getByText(/approved text sources are sent to the protected generation service/i)).toBeVisible();
-    expect(screen.getByText(/the portrait stays in this browser/i)).toBeVisible();
+    expect(screen.getByText(/prepared demo validates and compiles its synthetic sources locally/i)).toBeVisible();
+    expect(screen.getByText(/protected server endpoint handles live generation deployments/i)).toBeVisible();
+    expect(screen.getByText(/portrait remains in this browser/i)).toBeVisible();
 
     fireEvent.click(
       screen.getByRole("button", { name: /use prepared source pack/i }),

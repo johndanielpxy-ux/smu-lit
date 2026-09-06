@@ -1,107 +1,99 @@
 # LAWFLO
 
-LAWFLO helps a law firm's legal engineers turn tested and approved AI workflows into interactive peer stories, safe rehearsals and point-of-work action cards.
+**Team 42 · SMU LIT Legal-Tech Hackathon 2026**
 
-> LAWFLO compiles one approved internal workflow into a source-linked, human-approved interactive story, a safe rehearsal and a point-of-work action.
+[Try the live prototype](https://lawflo.onrender.com/) · [Read the three-minute demo route](docs/JUDGE-DEMO.md)
 
-This repository contains a synthetic hackathon demonstration. It is not connected to R&T, Harvey, Microsoft or any client system.
+![LAWFLO source-linked instructional episode](docs/images/lawflo-episode.png)
+
+LAWFLO turns a law firm's approved legal AI workflows into short interactive episodes, realistic guided rehearsals and source-linked guidance lawyers can use at work.
+
+The prototype teaches one concrete workflow: reviewing a low-value sales renewal with legal AI. The AI extracts the routine facts but misses an unlimited-liability clause. The learner must inspect the source, apply the firm's playbook and route the matter to legal review with the evidence attached.
+
+## Product journey
+
+1. A legal AI pioneer supplies the approved workflow, playbook, template, synthetic example matter and a consented or fictional presenter portrait.
+2. LAWFLO prepares a source-linked script, storyboard, generated episode and interactive checkpoint for human approval.
+3. A learner watches the four-chapter episode and repairs an unsafe reliance decision.
+4. The learner repeats the workflow inside a realistic contract-review replica.
+5. LAWFLO returns constructive feedback and an audit trail based only on actions the prototype observed.
+
+## What is real in this prototype
+
+- Four locally stored Runway-generated video chapters with generated narration
+- Deterministic overlays for exact contract facts, clauses and playbook rules
+- A complete creator-to-learner workflow with human approval and publication
+- A reducer-driven contract-review rehearsal with unsafe-path recovery
+- Versioned source provenance, approval fingerprints and an idempotent event ledger
+- Protected server endpoints for OpenAI module generation, OpenAI speech and Runway video generation
+- Persistent browser progress and a full demo reset
+
+The public presentation uses reviewed, downloaded media instead of waiting for a live generation queue. The prepared source pack is compiled locally into the approved scenario; the protected generation endpoints demonstrate the production integration boundary and require server-side credentials.
+
+## Architecture
+
+```text
+approved sources
+      │
+      ▼
+validated source bundle ──► typed script/storyboard ──► human approval
+      │                                                   │
+      ├──► generated episode + checkpoint                 │
+      ├──► guided legal-AI rehearsal                      │
+      └──► source lineage + event ledger ◄────────────────┘
+```
+
+The frontend is React, TypeScript and Vite. The Render service uses a small Node HTTP adapter to serve the built application and the protected generation routes. Domain rules, compilation, approval, rehearsal state, coaching and evidence lineage are separated from React views and tested independently.
 
 ## Run locally
 
+Requirements: Node.js 22 or later.
+
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-Verification:
+Open the local URL printed by Vite. Select **Enter LAWFLO**, choose **Legal engineer**, then use the prepared source pack for the reliable demo path.
+
+## Verification
 
 ```bash
 npm test
 npm run build
+npm run test:e2e
 ```
 
-## Join the team
+The browser suite covers the complete creator-to-review journey, the compact desktop layout and the intentional handoff from phone to desktop for the rehearsal.
 
-Antigravity contributors should start with [CONTRIBUTING.md](CONTRIBUTING.md),
-then read [AGENTS.md](AGENTS.md), the [technical depth plan](docs/TECHNICAL-DEPTH.md),
-and their one assigned handoff in [`docs/agent-handoffs/`](docs/agent-handoffs/).
-Run Antigravity from the repository root so it can discover the workspace
-instructions.
+## Optional generation services
 
-If gstack is installed, expose the relevant skills to Antigravity with:
+The prepared learner experience needs no credentials. Live generation endpoints use these server-only environment variables:
+
+```text
+OPENAI_API_KEY
+RUNWAYML_API_SECRET
+LAWFLO_STUDIO_TOKEN
+OPENAI_TEXT_MODEL   # optional; defaults to gpt-4o-mini
+```
+
+Never expose these values through Vite variables or commit them to the repository. To regenerate the reviewed demo media locally, set `RUNWAYML_API_SECRET` in your shell and run:
 
 ```bash
-bash scripts/link-gstack-antigravity.sh
+npm run generate:demo-media
 ```
 
-The handoff documents and the `npm test` / `npm run build` gates remain the
-fallback if a skill is unavailable.
+Existing completed media files are skipped.
 
-## Shared contract
+## Responsible-use boundary
 
-The contract checkpoint is commit `e3f115e`, now included on `main`.
+LAWFLO is a synthetic training prototype, not legal advice and not an R&T system. It uses fictional people, policies and matters. Generated content remains a draft until a human verifies its source evidence; a material exception overrides the low-value routing shortcut; and the event ledger never presents simulated downstream adoption as observed fact.
 
-All feature branches import:
+## Team
 
-- `UseCase`, `MatterShiftEvent` and related types from `src/domain/mattershift.ts`.
-- Teammate component props and the scoped event reporter from
-  `src/domain/integration.ts`.
-- The canonical synthetic workflow from `src/demo/demoUseCase.ts`.
-- Event helpers from `src/features/events/eventStore.ts`.
+- John Puang
+- Su-Ann
+- Ananya
+- Krishiv
 
-John's integration layer additionally exposes:
-
-- `approveUseCase()` and `isApprovalCurrent()` for exact-version human approval.
-- `compileApprovedUseCase()` for the deterministic episode, rehearsal and
-  activation-card bundle.
-- `buildEvidenceGraph()` for source → instruction → artefact → observed-event
-  lineage.
-- `createEventStore()` for persistent, idempotent prototype instrumentation.
-
-Pass the exact approved `UseCase` to `createScopedEventReporter()` when mounting
-a teammate component. The reporter adds the source version and approval
-fingerprint, preventing activity from an older workflow version being presented
-as evidence for the current bundle.
-
-Do not rename shared types or create private alternative demo data. Coordinate contract changes with John.
-
-## Team branches
-
-| Owner | Branch | Owned feature path |
-|---|---|---|
-| John | `feat/system-integration` | domain, compiler, event analytics and application shell |
-| Su-Ann | `feat/cinematic-episode` | `src/features/episode/` and episode assets |
-| Ananya | `feat/legal-engineer-studio` | `src/features/legal-engineer-studio/` and synthetic content |
-| Krishiv | `feat/learner-flow` | `src/features/learner-flow/` |
-
-Teammates should base their feature branches on `main`:
-
-```bash
-git fetch origin
-git switch main
-git pull --ff-only
-git switch -c feat/your-branch
-```
-
-Replace `feat/your-branch` with the assigned branch above.
-
-## Prototype truth boundary
-
-The event ledger may display only actions the prototype actually observes:
-
-- `use_case_compiled`
-- `source_opened`
-- `human_approved`
-- `episode_started`
-- `checkpoint_answered`
-- `rehearsal_completed`
-- `workflow_guide_opened`
-
-First safe use, repeat use and operational outcomes require governed production integrations. Do not seed those values and present them as observed evidence.
-
-## Safety
-
-- Use synthetic policies, fictional people and simulated interfaces.
-- Do not commit secrets, real client documents or confidential firm material.
-- Every material instruction must resolve to a current source reference.
-- A workflow cannot be presented as approved without a named human approver.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for repository conventions and [docs/TECHNICAL-DEPTH.md](docs/TECHNICAL-DEPTH.md) for the implementation map.

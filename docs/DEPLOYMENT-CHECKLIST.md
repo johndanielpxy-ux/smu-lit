@@ -15,13 +15,13 @@
 
 - [x] Dependencies installed
 - [x] Chromium available
-- [x] `npm test` — 199 passing
+- [x] `npm test` — 207 passing
 - [x] `npm run build`
 - [x] `npm run test:e2e`
 - [x] Canonical route repeated three times without failure
-- [x] Generate and visually approve both durable Runway MP4s
+- [x] Generate and visually approve all four durable Runway MP4s and narrations
 - [ ] Confirm all three Render secrets are set
-- [x] Video release commit: `a979c96`
+- [x] Video release commit: `b09f6cc`
 
 ## Browser evidence
 
@@ -30,9 +30,9 @@
 - [x] A 390×844 screen displays the intentional desktop-rehearsal boundary
 - [x] Unsafe low-value routing produces constructive correction
 - [x] There are zero uncaught page errors on the canonical route
-- [x] Prepared Runway MP4s play through both segments in local release Chrome
-- [x] Prepared Runway MP4s play through both segments on Render
-- [ ] Browser refresh resumes the published episode and Reset clears all progress
+- [x] Prepared Runway MP4s play through all four chapters in local release Chrome
+- [x] Prepared Runway MP4s play through all four chapters on Render
+- [x] Browser refresh resumes the published episode and Reset clears all progress
 
 ## Signed-out check
 
@@ -45,7 +45,7 @@
 ## Known risks and fallback
 
 - Render's free service may cold-start; open the public URL before judging.
-- The generated portrait is about 2 MB, so the first cold load may be slower on poor venue Wi-Fi. Reload once before judging so it is cached.
+- The generated portrait is about 2 MB and the four video chapters total roughly 43 MB, so the first cold load may be slower on poor venue Wi-Fi. Warm the learner episode before judging.
 - Runway output URLs expire. Only the downloaded files in `public/media/demo/`
   count as release media.
 - If stale browser progress appears, select **Reset demo** and reload the page.

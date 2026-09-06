@@ -1,60 +1,57 @@
-# Technical depth plan
+# LAWFLO technical architecture
 
-LAWFLO is not four screens. It is a small governed compilation system:
+LAWFLO is a governed learning compiler rather than a set of disconnected screens.
 
 ```text
-Approved workflow + sources + guardrails
-                  │
-                  ▼
-        deterministic compiler
-                  │
-      ┌───────────┼────────────┐
-      ▼           ▼            ▼
- peer episode  rehearsal   activation card
-      │           │            │
-      └───────────┼────────────┘
-                  ▼
-       truthful observed events
-                  │
-                  ▼
-        evidence/provenance graph
+workflow + playbook + template + example matter
+                         │
+                         ▼
+              validated source bundle
+                         │
+             ┌───────────┴───────────┐
+             ▼                       ▼
+  typed script and storyboard   human approval
+             │                       │
+             ├──── interactive episode
+             ├──── guided rehearsal
+             └──── source-linked workflow guide
+                         │
+                         ▼
+           observed events + evidence graph
 ```
 
-## Four real engineering systems
+## 1. Source and generation boundary
 
-| Owner | System | Technical mechanism | Judge-visible proof |
-|---|---|---|---|
-| John | Compiler + evidence graph | staged pure compiler, source lineage, content manifest, event-derived analytics | inspect one instruction from source to artefact to observed event |
-| Su-Ann | Episode engine | typed media timeline, checkpoint-gated reducer, transcript/source derivation, resume | seek and resume without bypassing the safety checkpoint |
-| Ananya | Governance studio | draft/review reducer, provenance coverage, approval invalidation, compiled JSON bundle | edit an approved instruction and watch approval/source status invalidate |
-| Krishiv | Simulation engine | guarded state machine, data-driven scenarios, explainable scoring, decision trace | attempt unsafe action, see it blocked, retry, and inspect evidence |
+`src/features/studio/` validates the five required inputs and separates uploaded object URLs from bundled release assets. `api/generation/module.ts` exposes a protected OpenAI generation route whose output must pass the same typed contract as the deterministic prepared demo. `server/videoGeneration.ts` provides protected Runway job creation, status and downloaded-media routes.
 
-## Integration contract
+The public three-minute path uses a reviewed source pack and durable generated media. It never depends on a live provider queue during judging.
 
-All systems consume the same `UseCase`. Generated objects retain `useCase.id`
-and `sourceVersion`. Any persisted state is namespaced by both fields. All
-callbacks use the shared event vocabulary and fire only after genuine user
-actions.
+## 2. Approval and compilation
 
-The integration shell owns navigation and the central event store. Subsystems
-own their internal state and export typed components plus pure logic that can
-be tested without rendering React.
+`src/domain/approval.ts` fingerprints the full material state of a workflow. `src/features/compiler/` refuses to compile an unapproved or stale source version and creates one versioned bundle for the episode, rehearsal, coaching rules and guide. A source or rule change invalidates the prior approval and identifies downstream learning objects that need review.
 
-## Depth policy
+## 3. Episode engine
 
-Core + Depth 1 in every handoff is the target, not a stretch. Depth 2 is the
-queue when an agent finishes early. A teammate should not respond to spare time
-by adding unrelated cards, animations, or a live API. They should strengthen
-their reducer/compiler, provenance, persistence, accessibility, or tests.
+`src/features/episode/` combines four Runway-generated chapters, four narration tracks, deterministic legal evidence overlays and a checkpoint-gated reducer. The exact contract value, clause text and routing rule are rendered by the application, not trusted to a video model. The timeline cannot advance past the checkpoint until the learner makes and, if needed, repairs the decision.
 
-## Merge order
+## 4. Guided legal-AI rehearsal
 
-1. Freeze shared contracts and canonical fixture.
-2. Develop the three subsystems independently against those contracts.
-3. Merge the legal engineer studio first because it creates the compiled input.
-4. Merge episode and rehearsal in either order.
-5. Integrate activation and evidence views, then run golden/unsafe end-to-end
-   paths from a clean browser.
+`src/features/rehearsal/` is a guarded state machine presented as a realistic contract-review workspace. The learner opens the matter, runs the authorised AI, inspects its supporting clause, compares the approved template, applies the playbook rule, selects a route and reviews the audit record. Unsafe or incomplete actions produce focused recovery rather than a terminal score.
 
-No branch is accepted solely from screenshots. It must pass its logic tests,
-component tests, the repository test command, and the production build.
+## 5. Evidence, persistence and coaching
+
+The event store accepts only a closed vocabulary of observable actions and writes idempotent, source-versioned events. `src/features/evidence/` resolves those events back to the approved source, instruction and learning artefact. Journey, episode and rehearsal persistence are scoped by bundle, source, contract and approval fingerprints so older progress cannot silently resume against changed rules.
+
+The coaching engine derives the final review from completed rehearsal behaviour. It does not invent downstream adoption, matter outcomes or first-safe-use analytics.
+
+## 6. Deployment and verification
+
+Render runs the Vite build behind a small Node server that serves the single-page application and generation endpoints. Credentials remain server-side. Unit and integration tests cover the compiler, approval, provider contracts, reducers, storage, safety boundaries and views; Playwright covers the complete creator-to-review journey, compact desktop and phone-to-desktop handoff.
+
+Run all release gates with:
+
+```bash
+npm test
+npm run build
+npm run test:e2e
+```

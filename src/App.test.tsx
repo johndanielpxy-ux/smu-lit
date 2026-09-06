@@ -90,6 +90,14 @@ describe("LAWFLO application", () => {
     expect(screen.getByRole("heading", { name: /your sales-renewal legal ai workflow guide/i })).toBeVisible();
   });
 
+  it("describes the complete published learning loop from the episode manifest", async () => {
+    renderApp();
+    await publish();
+
+    expect(screen.getByText(/4 chapters · one decision · one guided rehearsal/i)).toBeVisible();
+    expect(screen.queryByText(/two cinematic scenes/i)).not.toBeInTheDocument();
+  });
+
   it("enforces approval before publication and fully resets", async () => {
     renderApp();
     enterStudio();

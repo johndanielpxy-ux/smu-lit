@@ -1,14 +1,16 @@
 # LAWFLO prepared episode media
 
-The player expects two durable MP4 files in this directory:
+The release player uses four durable video and narration pairs:
 
-- `lawflo-review-the-renewal.mp4`
-- `lawflo-explain-the-route.mp4`
+- `lawflo-v2-01-ai-review.mp4` and `.mp3`
+- `lawflo-v2-02-verify-evidence.mp4` and `.mp3`
+- `lawflo-v2-03-learner-decision.mp4` and `.mp3`
+- `lawflo-v2-04-safe-route.mp4` and `.mp3`
 
-They are deliberately not remote Runway output URLs because those expire. Generate the two approved 15-second scenes with the server-only Runway workflow:
+The files are downloaded release assets rather than temporary provider URLs. Regenerate missing assets with the server-only Runway workflow:
 
 ```bash
 RUNWAYML_API_SECRET="your-secret" npm run generate:demo-media
 ```
 
-The command skips existing files and writes each completed download atomically. Review both renders, then commit the final MP4s before the demo. Until both exist, the player falls back truthfully to the deterministic interactive story.
+The command skips completed files and writes new downloads atomically. Review every render before committing it. Exact legal facts remain in deterministic interface overlays rather than generated footage.
