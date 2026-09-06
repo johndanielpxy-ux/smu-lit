@@ -15,13 +15,33 @@
 .episode__stage--comparison { background: linear-gradient(115deg, #16305c 0 49.7%, #512816 50%); }
 .episode__stage--routing { background: radial-gradient(circle at center, #78401c, #0b1e3d 65%); }
 .episode__stage--video { display: block; background: #050b16; }
-.episode__video { display: block; width: 100%; height: 100%; min-height: 480px; object-fit: cover; }
+.episode__video { display: block; width: 100%; height: 100%; min-height: 480px; object-fit: cover; opacity: .58; }
+.episode__audio { position: absolute; z-index: 5; top: 1.25rem; right: 1.25rem; width: min(250px, 35%); height: 36px; }
 .episode__video-label { position: absolute; z-index: 2; top: 1.25rem; left: 1.25rem; display: grid; gap: .2rem; padding: .7rem .85rem; border: 1px solid #ffffff32; border-radius: var(--radius-sm); background: #071226c9; backdrop-filter: blur(12px); }
 .episode__video-label span { color: #ec9c68; font: var(--text-label); letter-spacing: .07em; }
 .episode__video-label strong { font-size: .86rem; }
 .episode__center-play { position: absolute; z-index: 4; left: 50%; top: 50%; width: 76px; height: 76px; display: grid; place-items: center; transform: translate(-50%, -50%); border: 1px solid #ffffff99; border-radius: 50%; color: var(--rt-white); background: #071226c9; box-shadow: 0 12px 40px #0008; backdrop-filter: blur(10px); }
 .episode__center-play:hover { background: var(--rt-accent); border-color: var(--rt-accent); }
 .episode__center-play span { margin-left: .18rem; font-size: 1.45rem; }
+.instructional-overlay { position: absolute; z-index: 3; top: 50%; right: clamp(1.25rem, 4vw, 4rem); width: min(520px, 52%); transform: translateY(-50%); padding: clamp(1.25rem, 2.5vw, 2rem); border: 1px solid #ffffff38; border-radius: 14px; background: #071226ed; box-shadow: 0 24px 70px #0009; backdrop-filter: blur(18px); }
+.instructional-overlay > span { color: #f0a06d; font: var(--text-label); letter-spacing: .09em; }
+.instructional-overlay h2 { margin: .45rem 0 1rem; font-size: clamp(1.55rem, 2.6vw, 2.6rem); line-height: 1.02; letter-spacing: -.025em; }
+.instructional-overlay dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin: 0; }
+.instructional-overlay dl div { padding: .65rem; border: 1px solid #ffffff25; border-radius: 8px; background: #ffffff0a; }
+.instructional-overlay dt, .instructional-overlay small { color: #9fadc2; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; }
+.instructional-overlay dd { margin: .25rem 0 0; font-weight: 750; }
+.instructional-overlay__warning { display: grid; gap: .25rem; margin: .75rem 0 0; padding: .75rem; border-left: 3px solid #ef8b52; background: #ef8b5218; color: #ffd6bd; font-weight: 700; }
+.instructional-overlay__comparison { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+.instructional-overlay__comparison article { padding: .9rem; border: 1px solid #6d8a79; border-radius: 10px; background: #183227cc; }
+.instructional-overlay__comparison article:last-child { border-color: #d7774b; background: #552b1dcc; }
+.instructional-overlay__comparison p { margin: .45rem 0 0; line-height: 1.45; }
+.instructional-overlay__decision { display: grid; gap: .75rem; }
+.instructional-overlay__decision p, .instructional-overlay__decision strong { margin: 0; padding: .85rem; border-radius: 9px; }
+.instructional-overlay__decision p { background: #ffffff0d; color: #cbd5e3; }
+.instructional-overlay__decision strong { border: 1px solid #d7774b; background: #552b1dcc; color: #ffd6bd; }
+.instructional-overlay__route > strong { display: block; margin: .35rem 0 .65rem; color: #9ee0b9; font-size: 1.45rem; }
+.instructional-overlay__route p { color: #d3dcea; line-height: 1.5; }
+.instructional-overlay__route ul { margin: .8rem 0 0; padding: 0; display: grid; gap: .4rem; list-style: none; color: #b8cfc0; }
 .episode__portrait { width: 100%; height: 100%; max-height: 540px; object-fit: cover; object-position: center 20%; filter: saturate(.8) contrast(1.06); }
 .episode__frame { padding: clamp(2rem, 5vw, 5rem); align-self: center; }
 .episode__frame span, .episode__eyebrow { color: #ec9c68; letter-spacing: .07em; font: var(--text-label); }
@@ -41,7 +61,7 @@
 .episode__chapters button.is-current { color: #fff; border-color: var(--rt-accent); }
 .episode__chapters span { display: block; font-size: .72rem; }
 .episode__chapters small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-.episode__segments { max-width: 1200px; margin: 1rem auto; display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+.episode__segments { max-width: 1200px; margin: 1rem auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; }
 .episode__segments span { border-top: 2px solid #40516d; padding: .7rem .2rem; color: #93a2b9; font-size: .78rem; }
 .episode__segments span.is-current { border-color: var(--rt-accent); color: white; }
 .episode__segments span.is-complete { border-color: #6a8d78; color: #b8cfc0; }
@@ -53,5 +73,5 @@
 .episode__drawer article { padding: 1rem 0; border-bottom: 1px solid var(--rt-line); }
 .episode__source { display: grid; gap: .35rem; width: 100%; text-align: left; padding: 1rem 0; border: 0; border-bottom: 1px solid var(--rt-line); background: transparent; }
 .episode__source span { color: var(--color-text-muted); line-height: 1.5; }
-@media (max-width: 720px) { .episode__header { align-items: start; flex-direction: column; } .episode__stage { min-height: 560px; grid-template-columns: 1fr; } .episode__portrait { position: absolute; inset: 0; max-height: none; opacity: .4; } .episode__frame { z-index: 1; } .episode__chapters small { display: none; } .episode__choices { flex-direction: column; } }
+@media (max-width: 720px) { .episode__header { align-items: start; flex-direction: column; } .episode__stage { min-height: 560px; grid-template-columns: 1fr; } .episode__portrait { position: absolute; inset: 0; max-height: none; opacity: .4; } .episode__frame { z-index: 1; } .episode__chapters small { display: none; } .episode__choices { flex-direction: column; } .instructional-overlay { top: auto; right: 1rem; bottom: 3.5rem; left: 1rem; width: auto; transform: none; } .instructional-overlay dl, .instructional-overlay__comparison { grid-template-columns: 1fr; } .episode__audio { width: 210px; } .episode__segments { grid-template-columns: repeat(2, 1fr); } }
 @media (prefers-reduced-motion: reduce) { .episode *, .episode *::before, .episode *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }

@@ -4,6 +4,7 @@ import type { MatterShiftEventReporter } from "../../domain/integration";
 import type { CompiledLawfloBundle } from "../compiler/bundleCompiler";
 import type { JourneyScope } from "../journey/journeyReducer";
 import type { EpisodeMediaManifest } from "./episodeMedia";
+import { InstructionalOverlay } from "./InstructionalOverlay";
 import { createInitialEpisodeState, episodeReducer } from "./episodeReducer";
 import { loadEpisode, saveEpisode } from "./episodeStorage";
 import { createEpisodeTimeline } from "./timeline";
@@ -31,14 +32,17 @@ export function EpisodePlayer({ bundle, portraitUrl, narrationUrl, media, onEven
   const [audioUnavailable, setAudioUnavailable] = useState(false);
   const [mediaUnavailable, setMediaUnavailable] = useState(false);
   const [mediaSegmentIndex, setMediaSegmentIndex] = useState(0);
+  const [videoTime, setVideoTime] = useState(0);
   const [query, setQuery] = useState("");
   const started = useRef(false);
   const completed = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const hasPreparedVideo = Boolean(media && !mediaUnavailable);
   const stateCue = timeline[state.cueIndex];
-  const cue = hasPreparedVideo && mediaSegmentIndex === 1 ? timeline[timeline.length - 1] : stateCue;
+  const cue = stateCue;
   const mediaSegment = hasPreparedVideo ? media!.segments[mediaSegmentIndex] : undefined;
+  const overlay = mediaSegment?.overlayBeats.reduce((current, beat) => beat.atSeconds <= videoTime ? beat.overlay : current, mediaSegment.overlayBeats[0]?.overlay);
 
   useEffect(() => { saveEpisode(scope, state); }, [scope, state]);
   useEffect(() => {
@@ -47,7 +51,7 @@ export function EpisodePlayer({ bundle, portraitUrl, narrationUrl, media, onEven
     return () => window.clearInterval(timer);
   }, [hasPreparedVideo, state.status]);
   useEffect(() => { setAudioUnavailable(false); }, [narrationUrl]);
-  useEffect(() => () => { if ("speechSynthesis" in window) window.speechSynthesis.cancel(); }, []);
+  useEffect(() => { setAudioUnavailable(false); setVideoTime(0); }, [mediaSegmentIndex]);
 
   const reportStart = () => {
     if (started.current) return;
@@ -57,33 +61,35 @@ export function EpisodePlayer({ bundle, portraitUrl, narrationUrl, media, onEven
   const play = () => {
     reportStart();
     dispatch({ type: "PLAY" });
-    if (!narrationUrl && mediaSegment && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(mediaSegment.narration);
-      utterance.rate = 1.02;
-      utterance.pitch = 0.96;
-      window.speechSynthesis.speak(utterance);
+    if (hasPreparedVideo) {
+      if (audioRef.current && videoRef.current) audioRef.current.currentTime = videoRef.current.currentTime;
+      void videoRef.current?.play().catch(() => setMediaUnavailable(true));
+      if (!audioUnavailable) void audioRef.current?.play().catch(() => setAudioUnavailable(true));
     }
-    if (hasPreparedVideo) void videoRef.current?.play().catch(() => setMediaUnavailable(true));
   };
   const pause = () => {
     dispatch({ type: "PAUSE" });
     videoRef.current?.pause();
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    audioRef.current?.pause();
   };
   const handleMediaEnded = () => {
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    audioRef.current?.pause();
     if (!media) return;
     if (mediaSegmentIndex === media.checkpointAfterSegment) {
       const checkpointIndex = timeline.findIndex((item) => item.checkpoint);
       if (checkpointIndex >= 0) dispatch({ type: "SEEK", cueIndex: checkpointIndex });
       return;
     }
+    if (mediaSegmentIndex < media.segments.length - 1) {
+      setMediaSegmentIndex((index) => index + 1);
+      dispatch({ type: "PAUSE" });
+      return;
+    }
     dispatch({ type: "FINISH" });
   };
   const checkpoint = state.status === "checkpoint" ? stateCue.checkpoint : undefined;
   const matchingCues = timeline.filter((item) => `${item.title} ${item.narration} ${item.caption}`.toLowerCase().includes(query.toLowerCase()));
-  const sourceIds = checkpoint?.sourceRefIds ?? cue.sourceRefIds;
+  const sourceIds = checkpoint?.sourceRefIds ?? mediaSegment?.sourceRefIds ?? cue.sourceRefIds;
 
   return <section id="main-content" className="episode" aria-label="LAWFLO learning episode">
     <header className="episode__header">
@@ -94,9 +100,9 @@ export function EpisodePlayer({ bundle, portraitUrl, narrationUrl, media, onEven
     <div className={`episode__stage episode__stage--${cue.visual} ${hasPreparedVideo ? "episode__stage--video" : ""}`}>
       {state.status === "complete" ? <div className="episode__transition"><span className="episode__eyebrow">Episode complete</span><h2>You caught the AI’s miss.</h2><p>Now apply the same workflow to a realistic renewal matter with guidance at each step.</p><button type="button" onClick={() => { if (!completed.current) { completed.current = true; onComplete(); } }}>Start guided rehearsal</button></div> : checkpoint ? <div className="episode__checkpoint">
         <span className="episode__eyebrow">Decision checkpoint</span><h2>{checkpoint.prompt}</h2><p>SGD 42,000 renewal · submitted liability clause changed</p>
-        <div className="episode__choices">{checkpoint.choices.map((choice) => <button key={choice.id} type="button" onClick={() => { dispatch({ type: "ANSWER", choiceId: choice.id }); if (choice.safe && hasPreparedVideo) { setMediaSegmentIndex(1); dispatch({ type: "PAUSE" }); } onEvent("checkpoint_answered", { checkpointId: checkpoint.id, choiceId: choice.id, safe: choice.safe }); }}>{choice.label}</button>)}</div>
+        <div className="episode__choices">{checkpoint.choices.map((choice) => <button key={choice.id} type="button" onClick={() => { dispatch({ type: "ANSWER", choiceId: choice.id }); if (choice.safe && hasPreparedVideo) { setMediaSegmentIndex(media!.checkpointAfterSegment + 1); dispatch({ type: "PAUSE" }); } onEvent("checkpoint_answered", { checkpointId: checkpoint.id, choiceId: choice.id, safe: choice.safe }); }}>{choice.label}</button>)}</div>
         {state.lastAnswerSafe === false && <p className="episode__repair" role="alert">Low value never cancels a material redline. Open the clause, apply the higher-priority rule, then route to legal.</p>}
-      </div> : hasPreparedVideo ? <><video key={mediaSegment!.id} ref={videoRef} className="episode__video" title="Prepared training episode" src={mediaSegment!.src} playsInline preload="auto" onEnded={handleMediaEnded} onError={() => setMediaUnavailable(true)} /><div className="episode__video-label"><span>{media!.label}</span><strong>{mediaSegment!.title}</strong></div>{state.status !== "playing" && <button type="button" className="episode__center-play" aria-label={mediaSegmentIndex === 0 ? "Play episode video" : "Continue episode video"} onClick={play}><span aria-hidden="true">▶</span></button>}</> : <><img className="episode__portrait" src={portraitUrl ?? mayaPortrait} alt={`${bundle.useCase.contributorName}, fictional legal innovation counsel`} /><div className="episode__frame"><span>Chapter {cue.chapter} / {timeline.length}</span><h2>{cue.title}</h2><p>{cue.narration}</p></div></>}
+      </div> : hasPreparedVideo ? <><video key={mediaSegment!.id} ref={videoRef} className="episode__video" title="Prepared training episode" src={mediaSegment!.videoSrc} playsInline preload="auto" onTimeUpdate={(event) => setVideoTime(event.currentTarget.currentTime)} onEnded={handleMediaEnded} onError={() => setMediaUnavailable(true)} /><audio key={`${mediaSegment!.id}-audio`} ref={audioRef} className="episode__audio" title="Episode narration" controls preload="auto" src={mediaSegment!.audioSrc} onError={() => setAudioUnavailable(true)} />{overlay ? <InstructionalOverlay overlay={overlay} /> : null}<div className="episode__video-label"><span>{media!.label}</span><strong>{mediaSegment!.title}</strong></div>{state.status !== "playing" && <button type="button" className="episode__center-play" aria-label={mediaSegmentIndex === 0 ? "Play episode video" : "Continue episode video"} onClick={play}><span aria-hidden="true">▶</span></button>}</> : <><img className="episode__portrait" src={portraitUrl ?? mayaPortrait} alt={`${bundle.useCase.contributorName}, fictional legal innovation counsel`} /><div className="episode__frame"><span>Chapter {cue.chapter} / {timeline.length}</span><h2>{cue.title}</h2><p>{cue.narration}</p></div></>}
       {captions && state.status !== "complete" && <p className="episode__captions">{mediaSegment?.caption ?? cue.caption}</p>}
     </div>
 

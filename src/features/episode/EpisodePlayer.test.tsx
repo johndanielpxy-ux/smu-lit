@@ -22,18 +22,25 @@ describe("EpisodePlayer", () => {
     render(<EpisodePlayer bundle={bundle} media={preparedEpisodeMedia} onEvent={vi.fn()} onComplete={onComplete} />);
 
     const video = screen.getByTitle(/prepared training episode/i);
-    expect(video).toHaveAttribute("src", preparedEpisodeMedia.segments[0].src);
+    expect(video).toHaveAttribute("src", preparedEpisodeMedia.segments[0].videoSrc);
+    expect(screen.getByTitle(/episode narration/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[0].audioSrc);
+    expect(screen.getByText(/SGD 42,000/i)).toBeVisible();
     expect(screen.getByRole("button", { name: /play episode video/i })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /play episode video/i }));
     expect(play).toHaveBeenCalled();
 
     fireEvent.ended(video);
+    expect(screen.getByTitle(/prepared training episode/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[1].videoSrc);
+    expect(screen.getByText(/unlimited.*including indirect losses/i)).toBeVisible();
+    fireEvent.ended(screen.getByTitle(/prepared training episode/i));
     expect(screen.getByRole("heading", { name: /what should happen next/i })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /send to business approval/i }));
     expect(screen.getByText(/low value never cancels/i)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /escalate to legal review/i }));
-    expect(screen.getByTitle(/prepared training episode/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[1].src);
+    expect(screen.getByTitle(/prepared training episode/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[2].videoSrc);
 
+    fireEvent.ended(screen.getByTitle(/prepared training episode/i));
+    expect(screen.getByTitle(/prepared training episode/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[3].videoSrc);
     fireEvent.ended(screen.getByTitle(/prepared training episode/i));
     expect(screen.getByRole("button", { name: /start guided rehearsal/i })).toBeVisible();
     expect(onComplete).not.toHaveBeenCalled();
@@ -46,7 +53,7 @@ describe("EpisodePlayer", () => {
     expect(screen.getByRole("img", { name: /fictional legal innovation counsel/i })).toHaveAttribute("src", "blob:custom-presenter");
   });
 
-  it("starts built-in narration with a prepared video when no generated audio is supplied", () => {
+  it("uses prepared narration without invoking browser speech synthesis", () => {
     const speak = vi.fn();
     const cancel = vi.fn();
     vi.stubGlobal("speechSynthesis", { speak, cancel });
@@ -55,8 +62,9 @@ describe("EpisodePlayer", () => {
     render(<EpisodePlayer bundle={bundle} media={preparedEpisodeMedia} onEvent={vi.fn()} onComplete={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: /play episode video/i }));
-    expect(cancel).toHaveBeenCalled();
-    expect(speak).toHaveBeenCalledWith(expect.objectContaining({ text: expect.stringContaining("only a draft") }));
+    expect(screen.getByTitle(/episode narration/i)).toHaveAttribute("src", expect.stringMatching(/\.mp3$/));
+    expect(cancel).not.toHaveBeenCalled();
+    expect(speak).not.toHaveBeenCalled();
   });
 
   it("plays approved AI narration and falls back to captions when audio fails", () => {

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { preparedEpisodeMedia } from "../episode/episodeMedia";
 import { PreviewScreen } from "./PreviewScreen";
 
 describe("PreviewScreen", () => {
@@ -11,7 +12,9 @@ describe("PreviewScreen", () => {
     const video = screen.getByTitle(/episode preview video/i);
     expect(video).toBeVisible();
     expect(video).toHaveAttribute("controls");
-    expect(video).toHaveAttribute("src", expect.stringMatching(/review-the-renewal\.mp4/));
+    expect(video).toHaveAttribute("src", preparedEpisodeMedia.segments[0].videoSrc);
+    expect(screen.getByTitle(/episode preview narration/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[0].audioSrc);
+    expect(screen.getByText(/scene 1 of 4/i)).toBeVisible();
     expect(screen.getByRole("button", { name: /approve and publish/i })).toBeVisible();
     expect(screen.queryByRole("button", { name: /approve exact version/i })).not.toBeInTheDocument();
 
