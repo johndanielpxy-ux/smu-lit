@@ -15,6 +15,10 @@ describe("DemoPackInput", () => {
     );
 
     expect(await screen.findByText(/5 sources ready/i)).toBeVisible();
+    expect(screen.getByRole("button", { name: /replace workflow files/i })).toBeVisible();
+    expect(screen.queryByLabelText(/^upload workflow resources$/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /use prepared source pack/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/^or$/i)).not.toBeInTheDocument();
     expect(onReady).toHaveBeenCalledWith(
       expect.objectContaining({
         contractText: expect.stringContaining("submitted-sales-renewal-v1"),

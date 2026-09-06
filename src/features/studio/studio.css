@@ -246,6 +246,14 @@
 .source-list li > span { color: var(--rt-positive); }
 .source-list div { min-width: 0; display: grid; gap: .2rem; }
 .source-list small { overflow: hidden; color: var(--color-text-muted); text-overflow: ellipsis; white-space: nowrap; }
+.source-complete { margin: 1.25rem 0; padding: 1rem; border: 1px solid #a9c5b7; border-radius: var(--radius-md); background: #f7fbf8; }
+.source-complete > header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.source-complete > header > div { display: flex; align-items: center; gap: .75rem; }
+.source-complete > header small { display: block; margin-top: .15rem; color: var(--color-text-muted); }
+.source-complete > header button { min-height: 38px; padding: 0 .85rem; border: 1px solid var(--rt-line); border-radius: var(--radius-sm); background: var(--rt-white); color: var(--rt-navy); font-weight: 700; cursor: pointer; }
+.source-complete__check { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: var(--rt-positive); color: white; }
+.source-complete__input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.source-complete .source-list { margin-bottom: 0; }
 .source-settings { margin-top: 1rem; padding: .8rem 0; border-bottom: 1px solid var(--rt-line); color: var(--color-text-muted); font-size: .8rem; }
 .source-settings summary { color: var(--rt-navy); font-weight: 700; cursor: pointer; }
 .source-settings label { display: grid; gap: .5rem; margin-top: 1rem; }

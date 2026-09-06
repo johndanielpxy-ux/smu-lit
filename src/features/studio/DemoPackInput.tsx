@@ -53,6 +53,7 @@ export function DemoPackInput({ onReady, onCreate, onEvent }: DemoPackInputProps
   const [error, setError] = useState<string>();
   const draftRef = useRef(draft);
   const transferredRef = useRef(false);
+  const workflowInputRef = useRef<HTMLInputElement>(null);
 
   function replaceDraft(next: PartialDemoPack, source: "bundled" | "uploaded") {
     draftRef.current = next;
@@ -115,15 +116,20 @@ export function DemoPackInput({ onReady, onCreate, onEvent }: DemoPackInputProps
 
   return <section className="source-intake" aria-labelledby="demo-pack-title">
     <header className="source-intake__header"><p className="entry__eyebrow">Legal engineer studio</p><h1 id="demo-pack-title">Create training from your workflow.</h1><p>Add the instructions and examples your team already uses. LAWFLO will turn them into a short episode and guided rehearsal.</p></header>
-    <label className="source-dropzone">
-      <span className="source-dropzone__mark" aria-hidden="true">＋</span>
-      <strong>Upload workflow resources</strong>
-      <small>Workflow, playbook, approved template and a synthetic example matter</small>
-      <input type="file" multiple accept=".md,.txt,text/markdown,text/plain,image/png,image/jpeg,image/svg+xml" aria-label="Upload workflow resources" onChange={(event) => void selectResources(event)} />
-    </label>
-    <div className="source-intake__or"><span>or</span></div>
-    <button type="button" className="source-intake__prepared" onClick={loadPreparedPack}>Use prepared source pack</button>
-    {readyKinds.length ? <ul className="source-list">{readyKinds.map((kind) => <li key={kind}><span aria-hidden="true">✓</span><div><strong>{labels[kind]}</strong><small>{draft.filenames[kind]}</small></div></li>)}</ul> : null}
+    {readyKinds.length ? <section className="source-complete" aria-label="Uploaded workflow resources">
+      <header><div><span className="source-complete__check" aria-hidden="true">✓</span><div><strong>{readyKinds.length} workflow resources uploaded</strong><small>Ready to turn into a learning episode</small></div></div><button type="button" onClick={() => workflowInputRef.current?.click()}>Replace workflow files</button></header>
+      <input ref={workflowInputRef} className="source-complete__input" type="file" multiple accept=".md,.txt,text/markdown,text/plain,image/png,image/jpeg,image/svg+xml" aria-label="Replace workflow files input" onChange={(event) => void selectResources(event)} />
+      <ul className="source-list">{readyKinds.map((kind) => <li key={kind}><span aria-hidden="true">✓</span><div><strong>{labels[kind]}</strong><small>{draft.filenames[kind]}</small></div></li>)}</ul>
+    </section> : <>
+      <label className="source-dropzone">
+        <span className="source-dropzone__mark" aria-hidden="true">＋</span>
+        <strong>Upload workflow resources</strong>
+        <small>Workflow, playbook, approved template and a synthetic example matter</small>
+        <input type="file" multiple accept=".md,.txt,text/markdown,text/plain,image/png,image/jpeg,image/svg+xml" aria-label="Upload workflow resources" onChange={(event) => void selectResources(event)} />
+      </label>
+      <div className="source-intake__or"><span>or</span></div>
+      <button type="button" className="source-intake__prepared" onClick={loadPreparedPack}>Use prepared source pack</button>
+    </>}
     <section className="source-presenter" aria-labelledby="presenter-title"><div>{draft.portraitUrl ? <img src={draft.portraitUrl} alt="Selected episode presenter" /> : <span aria-hidden="true">JT</span>}<div><p className="entry__eyebrow">Episode presenter</p><h2 id="presenter-title">Choose who presents the episode.</h2><small>Use a synthetic or consented portrait. It stays in this browser.</small></div></div><label>Upload contributor portrait<input type="file" accept="image/png,image/jpeg,image/svg+xml" aria-label="Upload contributor portrait" onChange={selectPortrait} /></label></section>
     <details className="source-settings"><summary>Source settings</summary><p>Approved text sources are sent to the protected generation service only when you generate. The portrait stays in this browser.</p></details>
     <footer className="source-intake__footer"><span role="status">{readyKinds.length} sources ready</span><button type="button" className="entry__primary" disabled={!complete} onClick={() => { if (complete) { transferredRef.current = true; onCreate(complete); } }}>Create episode</button></footer>
