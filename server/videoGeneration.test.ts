@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createVideoGenerationHandler,
   createVideoGenerationService,
+  downloadGeneratedMedia,
   type VideoGenerationInput,
 } from "./videoGeneration";
 
@@ -22,6 +23,17 @@ function authorisedRequest(url: string, init: RequestInit = {}) {
 }
 
 describe("video generation service", () => {
+  it("downloads prepared narration as labelled MP3 media", async () => {
+    const fetcher: typeof fetch = vi.fn(async () => new Response(new Uint8Array([73, 68, 51]), {
+      headers: { "content-type": "audio/mpeg", "content-length": "3" },
+    }));
+
+    await expect(downloadGeneratedMedia("https://provider.example/voice.mp3", "audio", fetcher)).resolves.toEqual({
+      bytes: new Uint8Array([73, 68, 51]),
+      contentType: "audio/mpeg",
+    });
+  });
+
   it("returns immediately, progresses to success, and stores provider media inside LAWFLO", async () => {
     let finishRender!: (value: { providerTaskId: string; outputUrl: string }) => void;
     const render = vi.fn(() => new Promise<{ providerTaskId: string; outputUrl: string }>((resolve) => {

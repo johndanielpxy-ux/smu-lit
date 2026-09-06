@@ -1,8 +1,8 @@
 import { mkdir, rename, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { demoMediaPlans } from "../server/demoMediaPlan";
-import { createRunwayClient, renderRunwayVideo } from "../server/runwayClient";
-import { downloadGeneratedVideo } from "../server/videoGeneration";
+import { createRunwayClient, renderRunwayNarration, renderRunwayVideo } from "../server/runwayClient";
+import { downloadGeneratedMedia } from "../server/videoGeneration";
 
 const outputDirectory = path.resolve(process.cwd(), "public/media/demo");
 
@@ -19,19 +19,31 @@ async function main() {
   await mkdir(outputDirectory, { recursive: true });
 
   for (const plan of demoMediaPlans) {
-    const destination = path.join(outputDirectory, plan.filename);
-    if (await existsWithContent(destination)) {
+    const videoDestination = path.join(outputDirectory, plan.filename);
+    if (await existsWithContent(videoDestination)) {
       process.stdout.write(`Skipping existing ${plan.filename}\n`);
-      continue;
+    } else {
+      process.stdout.write(`Generating video: ${plan.label}…\n`);
+      const result = await renderRunwayVideo(client, { shots: plan.shots });
+      const media = await downloadGeneratedMedia(result.outputUrl, "video");
+      const partial = path.join(outputDirectory, `.${plan.filename}.${result.providerTaskId}.partial`);
+      await writeFile(partial, media.bytes);
+      await rename(partial, videoDestination);
+      process.stdout.write(`Saved ${plan.filename}\n`);
     }
 
-    process.stdout.write(`Generating ${plan.label}…\n`);
-    const result = await renderRunwayVideo(client, { shots: plan.shots });
-    const media = await downloadGeneratedVideo(result.outputUrl);
-    const partial = path.join(outputDirectory, `.${plan.filename}.${result.providerTaskId}.partial`);
-    await writeFile(partial, media.bytes);
-    await rename(partial, destination);
-    process.stdout.write(`Saved ${plan.filename}\n`);
+    const audioDestination = path.join(outputDirectory, plan.audioFilename);
+    if (await existsWithContent(audioDestination)) {
+      process.stdout.write(`Skipping existing ${plan.audioFilename}\n`);
+    } else {
+      process.stdout.write(`Generating narration: ${plan.label}…\n`);
+      const result = await renderRunwayNarration(client, { narration: plan.narration });
+      const media = await downloadGeneratedMedia(result.outputUrl, "audio");
+      const partial = path.join(outputDirectory, `.${plan.audioFilename}.${result.providerTaskId}.partial`);
+      await writeFile(partial, media.bytes);
+      await rename(partial, audioDestination);
+      process.stdout.write(`Saved ${plan.audioFilename}\n`);
+    }
   }
 }
 

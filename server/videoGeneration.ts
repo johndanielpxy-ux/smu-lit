@@ -33,26 +33,36 @@ export interface VideoGenerationService {
 
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 
-export async function downloadGeneratedVideo(url: string): Promise<MediaArtifact> {
+export async function downloadGeneratedMedia(
+  url: string,
+  expected: "video" | "audio",
+  fetcher: typeof fetch = fetch,
+): Promise<MediaArtifact> {
   const parsed = new URL(url);
-  if (parsed.protocol !== "https:") throw new Error("Generated video URL must use HTTPS.");
+  if (parsed.protocol !== "https:") throw new Error("Generated media URL must use HTTPS.");
 
-  const response = await fetch(parsed, { redirect: "follow" });
-  if (!response.ok) throw new Error("Generated video download failed.");
+  const response = await fetcher(parsed, { redirect: "follow" });
+  if (!response.ok) throw new Error("Generated media download failed.");
   const declaredBytes = Number(response.headers.get("content-length"));
   if (Number.isFinite(declaredBytes) && declaredBytes > MAX_VIDEO_BYTES) {
-    throw new Error("Generated video exceeded the storage limit.");
+    throw new Error("Generated media exceeded the storage limit.");
   }
   const bytes = new Uint8Array(await response.arrayBuffer());
   if (bytes.byteLength === 0 || bytes.byteLength > MAX_VIDEO_BYTES) {
-    throw new Error("Generated video had an invalid size.");
+    throw new Error("Generated media had an invalid size.");
   }
+  const received = response.headers.get("content-type")?.split(";", 1)[0];
+  const contentType = expected === "video"
+    ? received === "video/mp4" ? "video/mp4" : "application/octet-stream"
+    : received === "audio/mpeg" ? "audio/mpeg" : "application/octet-stream";
   return {
     bytes,
-    contentType: response.headers.get("content-type")?.split(";", 1)[0] === "video/mp4"
-      ? "video/mp4"
-      : "application/octet-stream",
+    contentType,
   };
+}
+
+export function downloadGeneratedVideo(url: string): Promise<MediaArtifact> {
+  return downloadGeneratedMedia(url, "video");
 }
 
 export function createVideoGenerationService(options: {
