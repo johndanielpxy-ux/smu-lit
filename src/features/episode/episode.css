@@ -15,9 +15,9 @@
 .episode__stage--comparison { background: linear-gradient(115deg, #16305c 0 49.7%, #512816 50%); }
 .episode__stage--routing { background: radial-gradient(circle at center, #78401c, #0b1e3d 65%); }
 .episode__stage--video { display: block; background: #050b16; }
-.episode__stage--video::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, #0611228c 0%, #06112252 42%, #061122bf 68%, #061122e8 100%); }
-.episode__video { display: block; width: 100%; height: 100%; min-height: 480px; object-fit: cover; opacity: .52; filter: saturate(.78) contrast(1.08) blur(1.1px); transform: scale(1.008); }
-.episode__audio { position: absolute; z-index: 5; top: 1.25rem; right: 1.25rem; width: min(250px, 35%); height: 36px; }
+.episode__stage--overlay::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, transparent 0%, #0611221f 48%, #061122b8 100%); }
+.episode__video { display: block; width: 100%; height: 100%; min-height: 480px; object-fit: cover; opacity: .94; filter: saturate(.94) contrast(1.04); }
+.episode__audio { display: none; }
 .episode__video-label { position: absolute; z-index: 2; top: 1.25rem; left: 1.25rem; display: grid; gap: .2rem; padding: .7rem .85rem; border: 1px solid #ffffff32; border-radius: var(--radius-sm); background: #071226c9; backdrop-filter: blur(12px); }
 .episode__video-label span { color: #ec9c68; font: var(--text-label); letter-spacing: .07em; }
 .episode__video-label strong { font-size: .86rem; }
@@ -63,9 +63,11 @@
 .episode__chapters span { display: block; font-size: .72rem; }
 .episode__chapters small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 .episode__segments { max-width: 1200px; margin: 1rem auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; }
-.episode__segments span { border-top: 2px solid #40516d; padding: .7rem .2rem; color: #93a2b9; font-size: .78rem; }
-.episode__segments span.is-current { border-color: var(--rt-accent); color: white; }
-.episode__segments span.is-complete { border-color: #6a8d78; color: #b8cfc0; }
+.episode__segments button { border: 0; border-top: 2px solid #40516d; padding: .7rem .2rem; color: #93a2b9; background: transparent; text-align: left; font-size: .78rem; }
+.episode__segments button span { display: block; margin-bottom: .18rem; font-size: .67rem; }
+.episode__segments button.is-current { border-color: var(--rt-accent); color: white; }
+.episode__segments button.is-complete { border-color: #6a8d78; color: #b8cfc0; }
+.episode__segments button:disabled { cursor: not-allowed; opacity: .42; }
 .episode__controls { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; color: #aebbd0; }
 .episode__controls button { background: var(--rt-white); color: var(--rt-navy); min-width: 150px; }
 .episode__drawer { position: fixed; top: 0; right: 0; z-index: 10; width: min(430px, 92vw); height: 100dvh; overflow: auto; background: var(--rt-white); color: var(--rt-navy); padding: 2rem; box-shadow: -20px 0 70px rgba(4,15,34,.45); }

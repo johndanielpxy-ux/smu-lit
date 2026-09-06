@@ -17,19 +17,18 @@ async function publishPreparedEpisode(page: Page) {
 
 async function completeEpisode(page: Page) {
   await page.getByRole("button", { name: "Watch episode" }).click();
-  await expect(page.getByRole("navigation", { name: "Episode segments" }).locator("span")).toHaveCount(4);
-  await expect(page.getByTitle("Episode narration")).toHaveAttribute("src", /\.mp3$/);
-  await expect(page.getByText("SGD 42,000")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Episode segments" }).getByRole("button")).toHaveCount(4);
+  await expect(page.getByLabel("Episode narration")).toHaveAttribute("src", /\.mp3$/);
+  await expect(page.getByRole("button", { name: "CC Off" })).toHaveAttribute("aria-pressed", "false");
 
   const endedPreparedSegment = () => page.evaluate(() => {
-    const video = document.querySelector<HTMLVideoElement>('video[title="Prepared training episode"]');
+    const video = document.querySelector<HTMLVideoElement>('video[aria-label="Prepared training episode"]');
     if (!video) return false;
     video.dispatchEvent(new Event("ended"));
     return true;
   });
   const preparedEpisode = await endedPreparedSegment();
   if (preparedEpisode) {
-    await expect(page.getByText(/unlimited.*including indirect losses/i)).toBeVisible();
     await endedPreparedSegment();
   } else {
     await page.getByRole("button", { name: /chapter 6/i }).click();
@@ -40,9 +39,9 @@ async function completeEpisode(page: Page) {
   await page.getByRole("button", { name: "Escalate to legal review" }).click();
 
   if (preparedEpisode) {
-    await expect(page.getByTitle("Prepared training episode")).toHaveAttribute("src", /lawflo-v2-03-learner-decision\.mp4$/);
+    await expect(page.getByLabel("Prepared training episode")).toHaveAttribute("src", /lawflo-v2-03-learner-decision\.mp4$/);
     await endedPreparedSegment();
-    await expect(page.getByTitle("Prepared training episode")).toHaveAttribute("src", /lawflo-v2-04-safe-route\.mp4$/);
+    await expect(page.getByLabel("Prepared training episode")).toHaveAttribute("src", /lawflo-v2-04-safe-route\.mp4$/);
     await endedPreparedSegment();
   } else {
     await page.getByRole("button", { name: "Continue to rehearsal" }).click();

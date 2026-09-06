@@ -21,31 +21,47 @@ describe("EpisodePlayer", () => {
     vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
     render(<EpisodePlayer bundle={bundle} media={preparedEpisodeMedia} onEvent={vi.fn()} onComplete={onComplete} />);
 
-    const video = screen.getByTitle(/prepared training episode/i);
+    const video = screen.getByLabelText(/prepared training episode/i);
     expect(video).toHaveAttribute("src", preparedEpisodeMedia.segments[0].videoSrc);
-    expect(screen.getByTitle(/episode narration/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[0].audioSrc);
+    expect(screen.getByLabelText(/episode narration/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[0].audioSrc);
+    expect(screen.queryByText(/SGD 42,000/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/the AI extracts the matter/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /CC Off/i })).toHaveAttribute("aria-pressed", "false");
+    fireEvent.timeUpdate(video, { target: { currentTime: 10 } });
     expect(screen.getByText(/SGD 42,000/i)).toBeVisible();
     expect(screen.getByRole("button", { name: /play episode video/i })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /play episode video/i }));
     expect(play).toHaveBeenCalled();
 
     fireEvent.ended(video);
-    expect(screen.getByTitle(/prepared training episode/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[1].videoSrc);
+    expect(screen.getByLabelText(/prepared training episode/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[1].videoSrc);
+    fireEvent.timeUpdate(screen.getByLabelText(/prepared training episode/i), { target: { currentTime: 10 } });
     expect(screen.getByText(/unlimited.*including indirect losses/i)).toBeVisible();
-    fireEvent.ended(screen.getByTitle(/prepared training episode/i));
+    fireEvent.ended(screen.getByLabelText(/prepared training episode/i));
     expect(screen.getByRole("heading", { name: /what should happen next/i })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /send to business approval/i }));
     expect(screen.getByText(/low value never cancels/i)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /escalate to legal review/i }));
-    expect(screen.getByTitle(/prepared training episode/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[2].videoSrc);
+    expect(screen.getByLabelText(/prepared training episode/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[2].videoSrc);
 
-    fireEvent.ended(screen.getByTitle(/prepared training episode/i));
-    expect(screen.getByTitle(/prepared training episode/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[3].videoSrc);
-    fireEvent.ended(screen.getByTitle(/prepared training episode/i));
+    fireEvent.ended(screen.getByLabelText(/prepared training episode/i));
+    expect(screen.getByLabelText(/prepared training episode/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[3].videoSrc);
+    fireEvent.ended(screen.getByLabelText(/prepared training episode/i));
     expect(screen.getByRole("button", { name: /start guided rehearsal/i })).toBeVisible();
     expect(onComplete).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /start guided rehearsal/i }));
     expect(onComplete).toHaveBeenCalledOnce();
+  });
+
+  it("lets a presenter move quickly between prepared chapters without bypassing the checkpoint", () => {
+    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
+    render(<EpisodePlayer bundle={bundle} media={preparedEpisodeMedia} onEvent={vi.fn()} onComplete={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /chapter 2: maya verifies/i }));
+    expect(screen.getByLabelText(/prepared training episode/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[1].videoSrc);
+    expect(screen.getByRole("button", { name: /chapter 3: apply the legal playbook/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /continue to decision/i }));
+    expect(screen.getByRole("heading", { name: /what should happen next/i })).toBeVisible();
   });
 
   it("uses the uploaded contributor portrait in the learning experience", () => {
@@ -62,7 +78,7 @@ describe("EpisodePlayer", () => {
     render(<EpisodePlayer bundle={bundle} media={preparedEpisodeMedia} onEvent={vi.fn()} onComplete={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: /play episode video/i }));
-    expect(screen.getByTitle(/episode narration/i)).toHaveAttribute("src", expect.stringMatching(/\.mp3$/));
+    expect(screen.getByLabelText(/episode narration/i)).toHaveAttribute("src", expect.stringMatching(/\.mp3$/));
     expect(cancel).not.toHaveBeenCalled();
     expect(speak).not.toHaveBeenCalled();
   });
@@ -73,7 +89,8 @@ describe("EpisodePlayer", () => {
     const audio = screen.getByTitle(/approved ai narration/i);
     expect(audio).toHaveAttribute("src", "blob:approved-narration");
     fireEvent.error(audio);
-    expect(screen.getByRole("status")).toHaveTextContent(/captions remain active/i);
+    expect(screen.getByRole("status")).toHaveTextContent(/captions are now on/i);
+    expect(screen.getByRole("button", { name: /CC On/i })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByTitle(/approved ai narration/i)).not.toBeInTheDocument();
     view.unmount();
   });
@@ -88,7 +105,7 @@ describe("EpisodePlayer", () => {
     const onEvent = vi.fn();
     render(<EpisodePlayer bundle={bundle} onEvent={onEvent} onComplete={vi.fn()} />);
     expect(screen.getByRole("heading", { name: /route a sales renewal/i })).toBeVisible();
-    expect(screen.getAllByText(/routine renewals look simple/i)).toHaveLength(2);
+    expect(screen.getAllByText(/routine renewals look simple/i)).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Play episode" }));
     fireEvent.click(screen.getByRole("button", { name: "Pause episode" }));
     fireEvent.click(screen.getByRole("button", { name: "Play episode" }));

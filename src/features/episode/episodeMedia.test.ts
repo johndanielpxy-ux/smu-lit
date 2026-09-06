@@ -16,7 +16,8 @@ describe("prepared episode media manifest", () => {
       expect(segment.videoSrc).toMatch(/^\/media\/demo\/[^/]+\.mp4$/);
       expect(segment.audioSrc).toMatch(/^\/media\/demo\/[^/]+\.mp3$/);
       expect(segment.sourceRefIds.length).toBeGreaterThan(0);
-      expect(segment.overlayBeats[0]?.atSeconds).toBe(0);
+      expect(segment.overlayBeats[0]?.atSeconds).toBeGreaterThanOrEqual(9);
+      expect(segment.overlayBeats[0]?.atSeconds).toBeLessThan(segment.durationSeconds);
     }
   });
 });
