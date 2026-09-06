@@ -5,7 +5,7 @@ async function publishPreparedEpisode(page: Page) {
   await page.getByRole("button", { name: /legal engineer/i }).click();
   await page.getByRole("button", { name: "Use prepared source pack" }).click();
   await expect(page.getByText(/5 sources ready/i)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Replace workflow files" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Replace workflow files", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Use prepared source pack" })).toHaveCount(0);
   await page.getByRole("button", { name: "Create episode" }).click();
   await expect(page.getByRole("heading", { name: /creating your learning episode/i })).toBeVisible();
@@ -40,12 +40,15 @@ async function completeEpisode(page: Page) {
   await page.getByRole("button", { name: "Escalate to legal review" }).click();
 
   if (preparedEpisode) {
+    await expect(page.getByTitle("Prepared training episode")).toHaveAttribute("src", /lawflo-v2-03-learner-decision\.mp4$/);
     await endedPreparedSegment();
+    await expect(page.getByTitle("Prepared training episode")).toHaveAttribute("src", /lawflo-v2-04-safe-route\.mp4$/);
     await endedPreparedSegment();
   } else {
     await page.getByRole("button", { name: "Continue to rehearsal" }).click();
   }
 
+  await expect(page.getByRole("button", { name: "Start guided rehearsal" })).toBeVisible();
   await page.getByRole("button", { name: "Start guided rehearsal" }).click();
 }
 
@@ -54,14 +57,10 @@ async function completeGuidedRehearsal(page: Page) {
   await page.getByRole("button", { name: "Run AI review" }).click();
   await page.getByRole("button", { name: "Open Material standard-term change" }).click();
   await page.getByRole("button", { name: "Compare liability clause" }).click();
-  await page.getByRole("textbox", { name: "Verified value for Material standard-term change" }).fill("true");
-  await page.getByRole("button", { name: "Submit verified value for Material standard-term change" }).click();
+  await page.getByRole("button", { name: "Material redline detected" }).click();
   await page.getByRole("button", { name: /open material standard-term changes require legal review/i }).click();
   await page.getByRole("button", { name: "Choose Legal review" }).click();
-  await page.getByRole("textbox", { name: "Explain your route" }).fill(
-    "The liability cap was removed, so the material-redline rule requires legal review.",
-  );
-  await page.getByRole("button", { name: "Submit route" }).click();
+  await page.getByRole("button", { name: "Confirm Legal review route" }).click();
   await page.getByRole("button", { name: "Inspect audit trail" }).click();
 }
 
