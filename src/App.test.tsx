@@ -3,7 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { resetDemo } from "./features/events/eventStore";
 
-beforeEach(() => { vi.unstubAllGlobals(); resetDemo(); window.localStorage.clear(); });
+beforeEach(() => {
+  vi.unstubAllGlobals();
+  resetDemo();
+  window.localStorage.clear();
+  vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
+  vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+});
 
 function renderApp() {
   return render(<App productionStepDurationMs={1} />);
@@ -66,7 +72,9 @@ describe("LAWFLO application", () => {
     await publish();
     fireEvent.click(screen.getByRole("button", { name: /watch episode/i }));
     fireEvent.ended(screen.getByTitle(/prepared training episode/i));
+    fireEvent.ended(screen.getByTitle(/prepared training episode/i));
     fireEvent.click(screen.getByRole("button", { name: /escalate to legal review/i }));
+    fireEvent.ended(screen.getByTitle(/prepared training episode/i));
     fireEvent.ended(screen.getByTitle(/prepared training episode/i));
     fireEvent.click(screen.getByRole("button", { name: /start guided rehearsal/i }));
     expect(screen.getByRole("heading", { level: 1, name: /northstar analytics sales renewal/i })).toBeVisible();
