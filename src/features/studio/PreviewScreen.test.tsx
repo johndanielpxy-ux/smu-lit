@@ -15,6 +15,7 @@ describe("PreviewScreen", () => {
     expect(video).toHaveAttribute("src", preparedEpisodeMedia.segments[0].videoSrc);
     expect(screen.getByTitle(/episode preview narration/i)).toHaveAttribute("src", preparedEpisodeMedia.segments[0].audioSrc);
     expect(screen.getByText(/scene 1 of 4/i)).toBeVisible();
+    expect(screen.getByText("SGD 42,000")).toBeVisible();
     expect(screen.getByRole("button", { name: /approve and publish/i })).toBeVisible();
     expect(screen.queryByRole("button", { name: /approve exact version/i })).not.toBeInTheDocument();
 
